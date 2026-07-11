@@ -9,38 +9,182 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UploadRouteImport } from './routes/upload'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as MistakesRouteImport } from './routes/mistakes'
+import { Route as ExamsRouteImport } from './routes/exams'
+import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CoursesCourseIdTopicIdRouteImport } from './routes/courses.$courseId.$topicId'
+import { Route as NotesCourseIdTopicIdNoteIdRouteImport } from './routes/notes.$courseId.$topicId.$noteId'
+import { Route as ExamCourseIdTopicIdExamIdRouteImport } from './routes/exam.$courseId.$topicId.$examId'
 
+const UploadRoute = UploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MistakesRoute = MistakesRouteImport.update({
+  id: '/mistakes',
+  path: '/mistakes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExamsRoute = ExamsRouteImport.update({
+  id: '/exams',
+  path: '/exams',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesRoute = CoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoursesCourseIdTopicIdRoute = CoursesCourseIdTopicIdRouteImport.update({
+  id: '/$courseId/$topicId',
+  path: '/$courseId/$topicId',
+  getParentRoute: () => CoursesRoute,
+} as any)
+const NotesCourseIdTopicIdNoteIdRoute =
+  NotesCourseIdTopicIdNoteIdRouteImport.update({
+    id: '/notes/$courseId/$topicId/$noteId',
+    path: '/notes/$courseId/$topicId/$noteId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ExamCourseIdTopicIdExamIdRoute =
+  ExamCourseIdTopicIdExamIdRouteImport.update({
+    id: '/exam/$courseId/$topicId/$examId',
+    path: '/exam/$courseId/$topicId/$examId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/courses': typeof CoursesRouteWithChildren
+  '/exams': typeof ExamsRoute
+  '/mistakes': typeof MistakesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/upload': typeof UploadRoute
+  '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
+  '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
+  '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/courses': typeof CoursesRouteWithChildren
+  '/exams': typeof ExamsRoute
+  '/mistakes': typeof MistakesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/upload': typeof UploadRoute
+  '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
+  '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
+  '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/courses': typeof CoursesRouteWithChildren
+  '/exams': typeof ExamsRoute
+  '/mistakes': typeof MistakesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/upload': typeof UploadRoute
+  '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
+  '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
+  '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/courses'
+    | '/exams'
+    | '/mistakes'
+    | '/sitemap.xml'
+    | '/upload'
+    | '/courses/$courseId/$topicId'
+    | '/exam/$courseId/$topicId/$examId'
+    | '/notes/$courseId/$topicId/$noteId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/courses'
+    | '/exams'
+    | '/mistakes'
+    | '/sitemap.xml'
+    | '/upload'
+    | '/courses/$courseId/$topicId'
+    | '/exam/$courseId/$topicId/$examId'
+    | '/notes/$courseId/$topicId/$noteId'
+  id:
+    | '__root__'
+    | '/'
+    | '/courses'
+    | '/exams'
+    | '/mistakes'
+    | '/sitemap.xml'
+    | '/upload'
+    | '/courses/$courseId/$topicId'
+    | '/exam/$courseId/$topicId/$examId'
+    | '/notes/$courseId/$topicId/$noteId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CoursesRoute: typeof CoursesRouteWithChildren
+  ExamsRoute: typeof ExamsRoute
+  MistakesRoute: typeof MistakesRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  UploadRoute: typeof UploadRoute
+  ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
+  NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/upload': {
+      id: '/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mistakes': {
+      id: '/mistakes'
+      path: '/mistakes'
+      fullPath: '/mistakes'
+      preLoaderRoute: typeof MistakesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exams': {
+      id: '/exams'
+      path: '/exams'
+      fullPath: '/exams'
+      preLoaderRoute: typeof ExamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses': {
+      id: '/courses'
+      path: '/courses'
+      fullPath: '/courses'
+      preLoaderRoute: typeof CoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +192,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/courses/$courseId/$topicId': {
+      id: '/courses/$courseId/$topicId'
+      path: '/$courseId/$topicId'
+      fullPath: '/courses/$courseId/$topicId'
+      preLoaderRoute: typeof CoursesCourseIdTopicIdRouteImport
+      parentRoute: typeof CoursesRoute
+    }
+    '/notes/$courseId/$topicId/$noteId': {
+      id: '/notes/$courseId/$topicId/$noteId'
+      path: '/notes/$courseId/$topicId/$noteId'
+      fullPath: '/notes/$courseId/$topicId/$noteId'
+      preLoaderRoute: typeof NotesCourseIdTopicIdNoteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exam/$courseId/$topicId/$examId': {
+      id: '/exam/$courseId/$topicId/$examId'
+      path: '/exam/$courseId/$topicId/$examId'
+      fullPath: '/exam/$courseId/$topicId/$examId'
+      preLoaderRoute: typeof ExamCourseIdTopicIdExamIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface CoursesRouteChildren {
+  CoursesCourseIdTopicIdRoute: typeof CoursesCourseIdTopicIdRoute
+}
+
+const CoursesRouteChildren: CoursesRouteChildren = {
+  CoursesCourseIdTopicIdRoute: CoursesCourseIdTopicIdRoute,
+}
+
+const CoursesRouteWithChildren =
+  CoursesRoute._addFileChildren(CoursesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CoursesRoute: CoursesRouteWithChildren,
+  ExamsRoute: ExamsRoute,
+  MistakesRoute: MistakesRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  UploadRoute: UploadRoute,
+  ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
+  NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
