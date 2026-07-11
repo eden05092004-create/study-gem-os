@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as MistakesRouteImport } from './routes/mistakes'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
@@ -21,6 +22,11 @@ import { Route as ExamCourseIdTopicIdExamIdRouteImport } from './routes/exam.$co
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MistakesRoute = MistakesRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/mistakes': typeof MistakesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/mistakes': typeof MistakesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/mistakes': typeof MistakesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/exams'
     | '/mistakes'
+    | '/sitemap.xml'
     | '/upload'
     | '/courses/$courseId/$topicId'
     | '/exam/$courseId/$topicId/$examId'
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/exams'
     | '/mistakes'
+    | '/sitemap.xml'
     | '/upload'
     | '/courses/$courseId/$topicId'
     | '/exam/$courseId/$topicId/$examId'
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/exams'
     | '/mistakes'
+    | '/sitemap.xml'
     | '/upload'
     | '/courses/$courseId/$topicId'
     | '/exam/$courseId/$topicId/$examId'
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   CoursesRoute: typeof CoursesRouteWithChildren
   ExamsRoute: typeof ExamsRoute
   MistakesRoute: typeof MistakesRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
   ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
   NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mistakes': {
@@ -212,6 +232,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesRoute: CoursesRouteWithChildren,
   ExamsRoute: ExamsRoute,
   MistakesRoute: MistakesRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
   ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
   NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
