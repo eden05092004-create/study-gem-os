@@ -162,6 +162,17 @@ function TopicDetail() {
             </Card>
           ))}
           <Button
+            className="w-full rounded-full"
+            onClick={() =>
+              navigate({
+                to: "/create-exam/$courseId/$topicId",
+                params: { courseId, topicId },
+              })
+            }
+          >
+            <ClipboardList className="h-4 w-4" /> Create exam manually
+          </Button>
+          <Button
             variant="outline"
             className="w-full rounded-full"
             onClick={() => toast("Coming soon: auto-generate an exam from your material ✨")}
