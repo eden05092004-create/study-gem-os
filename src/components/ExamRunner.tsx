@@ -13,6 +13,7 @@ import {
   gradeQuestion,
   type Question,
   type Blank,
+  type ImageLabel,
 } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
