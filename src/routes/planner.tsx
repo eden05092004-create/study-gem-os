@@ -311,12 +311,12 @@ function Planner() {
           {/* weekly hours */}
           <Card className="border-none p-4">
             <Label className="mb-3 block text-sm font-bold">
-              שעות לימוד זמינות בכל יום בשבוע
+              Available study hours for each day of the week
             </Label>
             <div className="space-y-2">
               {WEEKDAYS.map((name, idx) => (
                 <div key={idx} className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-foreground">יום {name}</span>
+                  <span className="text-sm text-foreground">{name}</span>
                   <Input
                     type="number"
                     min={0}
