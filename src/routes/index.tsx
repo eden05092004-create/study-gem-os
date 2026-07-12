@@ -6,6 +6,7 @@ import {
   Sparkles,
   ArrowRight,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
