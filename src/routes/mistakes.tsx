@@ -1,16 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, RotateCcw, XCircle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, RotateCcw, XCircle, CheckCircle2, Trash2 } from "lucide-react";
 import { AppShell, PageTitle } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExamRunner } from "@/components/ExamRunner";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { useStore } from "@/lib/store";
 import type { Question } from "@/lib/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/mistakes")({
   component: Mistakes,
 });
+
 
 function Mistakes() {
   const mistakes = useStore((s) => s.mistakes);
