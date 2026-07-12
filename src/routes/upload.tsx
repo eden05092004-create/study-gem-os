@@ -45,7 +45,7 @@ function UploadPage() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files || !courseId || !topicId) {
-      if (!topicId) toast("בחרו קורס ונושא לפני ההעלאה");
+      if (!topicId) toast("Select a course and topic before uploading");
       return;
     }
     const names: string[] = [];
@@ -54,17 +54,17 @@ function UploadPage() {
         name: f.name,
         kind: detectKind(f.name),
         size: `${(f.size / 1024 / 1024).toFixed(1)}MB`,
-        addedAt: "עכשיו",
+        addedAt: "just now",
       });
       names.push(f.name);
     });
     setUploaded((u) => [...names, ...u]);
-    toast.success(`${names.length} קבצים הועלו בהצלחה`);
+    toast.success(`${names.length} file(s) uploaded successfully`);
   };
 
   return (
     <AppShell>
-      <PageTitle title="העלאת חומרים" subtitle="PDF · PowerPoint · Word · תמונות" />
+      <PageTitle title="Upload materials" subtitle="PDF · PowerPoint · Word · Images" />
 
       <div className="mb-4 grid grid-cols-2 gap-3">
         <Select
