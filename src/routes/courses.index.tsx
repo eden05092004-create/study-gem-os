@@ -103,7 +103,8 @@ function Courses() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-bold text-foreground">{c.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {c.topics.length} topics
+                      {c.topics.length} topics ·{" "}
+                      {c.topics.reduce((n, t) => n + t.lectures.length, 0)} lectures
                     </div>
                   </div>
                   <ChevronDown
