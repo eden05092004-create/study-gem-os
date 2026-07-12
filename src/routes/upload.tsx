@@ -35,6 +35,7 @@ function detectKind(name: string): FileItem["kind"] {
 }
 
 function UploadPage() {
+  const navigate = useNavigate();
   const { courses, addFile } = useStore();
   const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
   const selectedCourse = courses.find((c) => c.id === courseId);
