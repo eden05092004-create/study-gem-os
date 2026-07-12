@@ -9,6 +9,7 @@ import {
   Sparkles,
   HelpCircle,
   ClipboardCheck,
+  FileUp,
   Layers,
   AlertOctagon,
   BarChart3,
