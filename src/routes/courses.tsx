@@ -32,27 +32,27 @@ function Courses() {
   return (
     <AppShell>
       <PageTitle
-        title="הקורסים שלי"
-        subtitle="ארגנו חומרים לפי קורסים ונושאים"
+        title="My Courses"
+        subtitle="Organize your materials by course and topic"
         action={
           <Dialog open={newCourseOpen} onOpenChange={setNewCourseOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="rounded-full">
-                <Plus className="h-4 w-4" /> קורס
+                <Plus className="h-4 w-4" /> Course
               </Button>
             </DialogTrigger>
-            <DialogContent dir="rtl">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle>קורס חדש</DialogTitle>
+                <DialogTitle>New course</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <Input
-                  placeholder="שם הקורס (למשל אנטומיה)"
+                  placeholder="Course name (e.g. Anatomy)"
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
                 />
                 <Input
-                  placeholder="אימוג'י (אופציונלי) 🧠"
+                  placeholder="Emoji (optional) 🧠"
                   value={courseEmoji}
                   onChange={(e) => setCourseEmoji(e.target.value)}
                 />
@@ -68,7 +68,7 @@ function Courses() {
                     setNewCourseOpen(false);
                   }}
                 >
-                  צור קורס
+                  Create course
                 </Button>
               </DialogFooter>
             </DialogContent>
