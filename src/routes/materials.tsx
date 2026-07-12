@@ -107,20 +107,66 @@ function MaterialsPage() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((f) => (
-            <div
-              key={f.id}
-              className="card-hover rounded-2xl border border-border bg-card p-4"
-            >
-              <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-muted">
-                <FileText className="h-5 w-5 text-muted-foreground" />
+          {filtered.map((f) => {
+            const params = { courseId: f.courseId, topicId: f.topicId };
+            return (
+              <div
+                key={f.id}
+                className="rounded-2xl border border-border bg-card p-4"
+              >
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-muted">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <ConfirmDelete
+                    title={`Delete "${f.name}"?`}
+                    description="This permanently removes the file from its topic."
+                    onConfirm={() => {
+                      deleteFile(f.courseId, f.topicId, f.id);
+                      toast.success("File deleted");
+                    }}
+                  />
+                </div>
+                <div className="truncate font-semibold text-foreground">{f.name}</div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {f.course} · {f.topic}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    onClick={() =>
+                      navigate({ to: "/generate-notes/$courseId/$topicId", params })
+                    }
+                  >
+                    <NotebookPen className="h-3.5 w-3.5" /> Generate Notes
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    onClick={() =>
+                      navigate({ to: "/generate-exam/$courseId/$topicId", params })
+                    }
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" /> Generate Exam
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    onClick={() =>
+                      navigate({ to: "/generate-image-exam/$courseId/$topicId", params })
+                    }
+                  >
+                    <FileImage className="h-3.5 w-3.5" /> Image Questions
+                  </Button>
+                </div>
               </div>
-              <div className="truncate font-semibold text-foreground">{f.name}</div>
-              <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                {f.course} · {f.topic}
-              </div>
-            </div>
-          ))}
+            );
+          })}
+
         </div>
       )}
     </AppShell>
