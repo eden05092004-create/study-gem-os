@@ -43,7 +43,7 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("החשבון נוצר בהצלחה!");
+        toast.success("Account created successfully!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -54,12 +54,12 @@ function AuthPage() {
       reset();
       navigate({ to: "/" });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "אירעה שגיאה";
+      const message = err instanceof Error ? err.message : "Something went wrong";
       toast.error(
         message.includes("Invalid login")
-          ? "אימייל או סיסמה שגויים"
+          ? "Incorrect email or password"
           : message.includes("already registered")
-            ? "האימייל כבר רשום — נסו להתחבר"
+            ? "This email is already registered — try signing in"
             : message,
       );
     } finally {
