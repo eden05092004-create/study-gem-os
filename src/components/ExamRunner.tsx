@@ -99,6 +99,74 @@ function QuestionBody({
 }) {
   const key = (b: string) => `${q.id}:${b}`;
 
+  // image-based questions: show the figure, then answer rows/inputs
+  if (q.type.startsWith("image")) {
+    const clinicalSingle = q.type === "image_clinical" && q.blanks.length === 1;
+    const single = clinicalSingle ? q.blanks[0] : null;
+    return (
+      <div>
+        {q.imageUrl && <ImageBlock url={q.imageUrl} labels={q.imageLabels} />}
+        {single && single.options.length > 0 ? (
+          <RadioGroup
+            value={answers[key(single.id)] ?? ""}
+            onValueChange={(v) => setAnswer(single.id, v)}
+            className="space-y-2"
+          >
+            {single.options.map((opt, oi) => (
+              <label
+                key={oi}
+                htmlFor={`${q.id}-${oi}`}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors",
+                  answers[key(single.id)] === opt
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/50",
+                )}
+              >
+                <RadioGroupItem id={`${q.id}-${oi}`} value={opt} />
+                <span className="text-sm font-medium text-foreground">{opt}</span>
+              </label>
+            ))}
+          </RadioGroup>
+        ) : single ? (
+          <Input
+            placeholder="Type your answer…"
+            value={answers[key(single.id)] ?? ""}
+            onChange={(e) => setAnswer(single.id, e.target.value)}
+          />
+        ) : (
+          <div className="space-y-2.5">
+            {q.blanks.map((blank) => (
+              <div
+                key={blank.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"
+              >
+                <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+                  {blank.label || blank.id}
+                </span>
+                {blank.options.length > 0 ? (
+                  <BlankSelect
+                    blank={blank}
+                    value={answers[key(blank.id)]}
+                    onChange={(v) => setAnswer(blank.id, v)}
+                  />
+                ) : (
+                  <Input
+                    className="max-w-[12rem]"
+                    placeholder="Answer…"
+                    value={answers[key(blank.id)] ?? ""}
+                    onChange={(e) => setAnswer(blank.id, e.target.value)}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+
   if (q.type === "mcq") {
     const blank = q.blanks[0];
     return (
