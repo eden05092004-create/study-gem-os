@@ -76,32 +76,31 @@ function AuthPage() {
           </div>
           <h1 className="text-2xl font-extrabold text-foreground">StudyOS</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            פלטפורמת הלימודים לרפואה
+            Medical study platform
           </p>
         </div>
 
         <Card className="soft-shadow border-none p-6">
           <h2 className="mb-4 text-lg font-bold text-foreground">
-            {mode === "login" ? "התחברות" : "יצירת חשבון"}
+            {mode === "login" ? "Sign in" : "Create account"}
           </h2>
           <form onSubmit={submit} className="space-y-4">
             {mode === "signup" && (
               <div className="space-y-1.5">
-                <Label htmlFor="name">שם</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="דניאל"
+                  placeholder="Daniel"
                 />
               </div>
             )}
             <div className="space-y-1.5">
-              <Label htmlFor="email">אימייל</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
@@ -109,11 +108,10 @@ function AuthPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">סיסמה</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
-                dir="ltr"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -123,18 +121,18 @@ function AuthPage() {
             </div>
             <Button type="submit" className="w-full rounded-full" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {mode === "login" ? "התחבר" : "צור חשבון"}
+              {mode === "login" ? "Sign in" : "Create account"}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            {mode === "login" ? "אין לך חשבון?" : "כבר רשום?"}{" "}
+            {mode === "login" ? "Don't have an account?" : "Already registered?"}{" "}
             <button
               type="button"
               className="font-semibold text-primary"
               onClick={() => setMode(mode === "login" ? "signup" : "login")}
             >
-              {mode === "login" ? "הרשמה" : "התחברות"}
+              {mode === "login" ? "Sign up" : "Sign in"}
             </button>
           </p>
         </Card>
