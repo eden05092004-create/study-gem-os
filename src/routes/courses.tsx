@@ -126,13 +126,18 @@ function Courses() {
                             {t.name}
                           </div>
                           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <FileText className="h-3 w-3" /> {t.files.length} קבצים ·{" "}
-                            {t.exams.length} מבחנים
+                            <FileText className="h-3 w-3" /> {t.files.length} files ·{" "}
+                            {t.exams.length} exams
                           </div>
                         </div>
                       </Card>
                     </Link>
                   ))}
+                  {c.topics.length === 0 && (
+                    <p className="px-1 py-2 text-xs text-muted-foreground">
+                      No topics yet — add your first topic.
+                    </p>
+                  )}
 
                   <Dialog
                     open={topicFor === c.id}
@@ -144,15 +149,15 @@ function Courses() {
                         size="sm"
                         className="w-full justify-center rounded-xl text-primary"
                       >
-                        <Plus className="h-4 w-4" /> הוסף נושא
+                        <Plus className="h-4 w-4" /> Add topic
                       </Button>
                     </DialogTrigger>
-                    <DialogContent dir="rtl">
+                    <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>נושא חדש ב{c.name}</DialogTitle>
+                        <DialogTitle>New topic in {c.name}</DialogTitle>
                       </DialogHeader>
                       <Input
-                        placeholder="שם הנושא (למשל מעגל קרבס)"
+                        placeholder="Topic name (e.g. Krebs cycle)"
                         value={topicName}
                         onChange={(e) => setTopicName(e.target.value)}
                       />
@@ -166,7 +171,7 @@ function Courses() {
                             setTopicFor(null);
                           }}
                         >
-                          צור נושא
+                          Create topic
                         </Button>
                       </DialogFooter>
                     </DialogContent>
