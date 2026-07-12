@@ -242,17 +242,9 @@ export const useStore = create<State>((set, get) => ({
       .eq("id", user.id)
       .maybeSingle();
 
-    // Seed sample data for brand-new accounts
-    const { count } = await supabase
-      .from("courses")
-      .select("id", { count: "exact", head: true });
-    if (!count) {
-      await seedSampleData(user.id);
-    }
-
     const loaded = await loadAll(user.id);
     set({
-      userName: profile?.display_name ?? user.email?.split("@")[0] ?? "סטודנט",
+      userName: profile?.display_name ?? user.email?.split("@")[0] ?? "Student",
       ...loaded,
       loading: false,
       initialized: true,
