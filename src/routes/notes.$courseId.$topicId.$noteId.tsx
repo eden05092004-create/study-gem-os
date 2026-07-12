@@ -50,7 +50,7 @@ function NoteViewer() {
                 onClick={() =>
                   setOpenKeys((k) => ({ ...k, [sec.key]: !k[sec.key] }))
                 }
-                className="flex w-full items-center gap-3 p-4 text-right"
+                className="flex w-full items-center gap-3 p-4 text-left"
               >
                 <span className="text-xl">{sec.icon}</span>
                 <span className="min-w-0 flex-1 font-bold text-foreground">
