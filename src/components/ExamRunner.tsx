@@ -200,24 +200,24 @@ export function ExamRunner({
           disabled={current === 0}
           onClick={() => setCurrent((c) => c - 1)}
         >
-          <ChevronRight className="h-4 w-4" /> הקודם
+          <ChevronLeft className="h-4 w-4" /> Previous
         </Button>
         {current < questions.length - 1 ? (
           <Button
             className="flex-1 rounded-full"
             onClick={() => setCurrent((c) => c + 1)}
           >
-            הבא <ChevronLeft className="h-4 w-4" />
+            Next <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
           <Button className="flex-1 rounded-full" onClick={submit}>
-            הגש מבחן
+            Submit exam
           </Button>
         )}
       </div>
       {current === questions.length - 1 && (
         <p className="mt-3 flex items-center justify-center gap-1 text-xs text-muted-foreground">
-          <RotateCcw className="h-3 w-3" /> ניתן לחזור אחורה ולערוך תשובות לפני ההגשה
+          <RotateCcw className="h-3 w-3" /> You can go back and edit answers before submitting
         </p>
       )}
     </div>
