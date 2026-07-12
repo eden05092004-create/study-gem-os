@@ -22,10 +22,10 @@ function Exams() {
 
   return (
     <AppShell>
-      <PageTitle title="מבחנים" subtitle="תרגלו בסגנון מבחן אמיתי" />
+      <PageTitle title="Exams" subtitle="Practice in real exam style" />
       {all.length === 0 && (
         <p className="py-10 text-center text-sm text-muted-foreground">
-          אין מבחנים עדיין — צרו מבחן בתוך נושא
+          No exams yet — create an exam inside a topic
         </p>
       )}
       <div className="space-y-3">
