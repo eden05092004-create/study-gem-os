@@ -263,6 +263,7 @@ async function loadAll() {
     questionsRes,
     mistakesRes,
     answersRes,
+    lecturesRes,
   ] = await Promise.all([
     supabase.from("courses").select("*").order("created_at"),
     supabase.from("topics").select("*").order("created_at"),
@@ -272,7 +273,16 @@ async function loadAll() {
     supabase.from("questions").select("*").order("position"),
     supabase.from("mistakes").select("*").order("created_at"),
     supabase.from("answers").select("id"),
+    supabase.from("lectures").select("*").order("position"),
   ]);
+
+  const lecturesByTopic = new Map<string, Lecture[]>();
+  for (const l of lecturesRes.data ?? []) {
+    const arr = lecturesByTopic.get(l.topic_id) ?? [];
+    arr.push({ id: l.id, number: l.number, name: l.name });
+    lecturesByTopic.set(l.topic_id, arr);
+  }
+
 
   const questions = questionsRes.data ?? [];
   const questionMap = new Map<string, Question>();
