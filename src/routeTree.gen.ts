@@ -13,6 +13,7 @@ import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MistakesRouteImport } from './routes/mistakes'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as ExamsRouteImport } from './routes/exams'
@@ -46,6 +47,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const PlannerRoute = PlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MistakesRoute = MistakesRouteImport.update({
@@ -114,9 +120,9 @@ const CoursesCourseIdTopicIdRoute = CoursesCourseIdTopicIdRouteImport.update({
 } as any)
 const NotesCourseIdTopicIdNoteIdRoute =
   NotesCourseIdTopicIdNoteIdRouteImport.update({
-    id: '/notes/$courseId/$topicId/$noteId',
-    path: '/notes/$courseId/$topicId/$noteId',
-    getParentRoute: () => rootRouteImport,
+    id: '/$courseId/$topicId/$noteId',
+    path: '/$courseId/$topicId/$noteId',
+    getParentRoute: () => NotesRoute,
   } as any)
 const ExamCourseIdTopicIdExamIdRoute =
   ExamCourseIdTopicIdExamIdRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/exams': typeof ExamsRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/exams': typeof ExamsRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/exams': typeof ExamsRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/materials'
     | '/mistakes'
+    | '/notes'
     | '/planner'
     | '/settings'
     | '/sitemap.xml'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/materials'
     | '/mistakes'
+    | '/notes'
     | '/planner'
     | '/settings'
     | '/sitemap.xml'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/exams'
     | '/materials'
     | '/mistakes'
+    | '/notes'
     | '/planner'
     | '/settings'
     | '/sitemap.xml'
@@ -257,6 +269,7 @@ export interface RootRouteChildren {
   ExamsRoute: typeof ExamsRoute
   MaterialsRoute: typeof MaterialsRoute
   MistakesRoute: typeof MistakesRoute
+  NotesRoute: typeof NotesRouteWithChildren
   PlannerRoute: typeof PlannerRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -266,7 +279,6 @@ export interface RootRouteChildren {
   GenerateNotesCourseIdTopicIdRoute: typeof GenerateNotesCourseIdTopicIdRoute
   UploadExamCourseIdTopicIdRoute: typeof UploadExamCourseIdTopicIdRoute
   ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
-  NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -297,6 +309,13 @@ declare module '@tanstack/react-router' {
       path: '/planner'
       fullPath: '/planner'
       preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mistakes': {
@@ -385,10 +404,10 @@ declare module '@tanstack/react-router' {
     }
     '/notes/$courseId/$topicId/$noteId': {
       id: '/notes/$courseId/$topicId/$noteId'
-      path: '/notes/$courseId/$topicId/$noteId'
+      path: '/$courseId/$topicId/$noteId'
       fullPath: '/notes/$courseId/$topicId/$noteId'
       preLoaderRoute: typeof NotesCourseIdTopicIdNoteIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof NotesRoute
     }
     '/exam/$courseId/$topicId/$examId': {
       id: '/exam/$courseId/$topicId/$examId'
@@ -411,6 +430,16 @@ const CoursesRouteChildren: CoursesRouteChildren = {
 const CoursesRouteWithChildren =
   CoursesRoute._addFileChildren(CoursesRouteChildren)
 
+interface NotesRouteChildren {
+  NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
+}
+
+const NotesRouteChildren: NotesRouteChildren = {
+  NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
+}
+
+const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
@@ -419,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExamsRoute: ExamsRoute,
   MaterialsRoute: MaterialsRoute,
   MistakesRoute: MistakesRoute,
+  NotesRoute: NotesRouteWithChildren,
   PlannerRoute: PlannerRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -428,7 +458,6 @@ const rootRouteChildren: RootRouteChildren = {
   GenerateNotesCourseIdTopicIdRoute: GenerateNotesCourseIdTopicIdRoute,
   UploadExamCourseIdTopicIdRoute: UploadExamCourseIdTopicIdRoute,
   ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
-  NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
