@@ -18,6 +18,7 @@ import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MistakesRouteImport } from './routes/mistakes'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as GeneratorRouteImport } from './routes/generator'
+import { Route as FlashcardsRouteImport } from './routes/flashcards'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as CalendarRouteImport } from './routes/calendar'
@@ -75,6 +76,11 @@ const MaterialsRoute = MaterialsRouteImport.update({
 const GeneratorRoute = GeneratorRouteImport.update({
   id: '/generator',
   path: '/generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlashcardsRoute = FlashcardsRouteImport.update({
+  id: '/flashcards',
+  path: '/flashcards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExamsRoute = ExamsRouteImport.update({
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/flashcards': typeof FlashcardsRoute
   '/generator': typeof GeneratorRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/flashcards': typeof FlashcardsRoute
   '/generator': typeof GeneratorRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/flashcards': typeof FlashcardsRoute
   '/generator': typeof GeneratorRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/courses'
     | '/exams'
+    | '/flashcards'
     | '/generator'
     | '/materials'
     | '/mistakes'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/courses'
     | '/exams'
+    | '/flashcards'
     | '/generator'
     | '/materials'
     | '/mistakes'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/courses'
     | '/exams'
+    | '/flashcards'
     | '/generator'
     | '/materials'
     | '/mistakes'
@@ -304,6 +316,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   CoursesRoute: typeof CoursesRouteWithChildren
   ExamsRoute: typeof ExamsRoute
+  FlashcardsRoute: typeof FlashcardsRoute
   GeneratorRoute: typeof GeneratorRoute
   MaterialsRoute: typeof MaterialsRoute
   MistakesRoute: typeof MistakesRoute
@@ -383,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/generator'
       fullPath: '/generator'
       preLoaderRoute: typeof GeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/flashcards': {
+      id: '/flashcards'
+      path: '/flashcards'
+      fullPath: '/flashcards'
+      preLoaderRoute: typeof FlashcardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exams': {
@@ -507,6 +527,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   CoursesRoute: CoursesRouteWithChildren,
   ExamsRoute: ExamsRoute,
+  FlashcardsRoute: FlashcardsRoute,
   GeneratorRoute: GeneratorRoute,
   MaterialsRoute: MaterialsRoute,
   MistakesRoute: MistakesRoute,
