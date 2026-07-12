@@ -136,6 +136,7 @@ export type NewQuestion = {
 
 type State = {
   userName: string;
+  userEmail: string;
   studyHoursToday: number;
   questionsSolved: number;
   nextExamDate: string;
