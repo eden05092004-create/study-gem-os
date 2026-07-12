@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useStore, type QuestionType } from "@/lib/store";
 import { getAiKeyStatus, parseOldExam } from "@/lib/ai.functions";
+import { extractImages, stripDataUrl } from "@/lib/extract-images";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/upload-exam/$courseId/$topicId")({
