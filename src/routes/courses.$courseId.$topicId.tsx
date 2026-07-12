@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   ChevronLeft,
   FileText,
@@ -8,6 +9,8 @@ import {
   NotebookPen,
   ClipboardList,
   Layers,
+  GraduationCap,
+  Plus,
   Upload as UploadIcon,
   Sparkles,
   Play,
@@ -15,10 +18,13 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 import { useStore, type FileItem } from "@/lib/store";
+import { parseLectures } from "@/lib/lectures";
 
 export const Route = createFileRoute("/courses/$courseId/$topicId")({
   component: TopicDetail,
