@@ -76,6 +76,15 @@ function Courses() {
         }
       />
 
+      {courses.length === 0 && (
+        <Card className="border-none p-8 text-center">
+          <p className="font-semibold text-foreground">No courses yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create your first course to get started.
+          </p>
+        </Card>
+      )}
+
       <div className="space-y-3">
         {courses.map((c) => {
           const expanded = open === c.id;
@@ -83,7 +92,7 @@ function Courses() {
             <Card key={c.id} className="overflow-hidden border-none p-0">
               <button
                 onClick={() => setOpen(expanded ? null : c.id)}
-                className="flex w-full items-center gap-3 p-4 text-right"
+                className="flex w-full items-center gap-3 p-4 text-left"
               >
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-muted text-xl">
                   {c.emoji}
@@ -91,7 +100,7 @@ function Courses() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-bold text-foreground">{c.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {c.topics.length} נושאים
+                    {c.topics.length} topics
                   </div>
                 </div>
                 <ChevronDown
