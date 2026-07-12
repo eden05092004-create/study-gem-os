@@ -509,7 +509,51 @@ export const useStore = create<State>((set, get) => ({
     set({ courses: loaded.courses });
   },
 
-  recordExamResult: async (courseId, topicId, examId, answers) => {
+  addNote: async (courseId, topicId, title, sections) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (!user) return null;
+    const { data } = await supabase
+      .from("notes")
+      .insert({
+        user_id: user.id,
+        topic_id: topicId,
+        title,
+        sections,
+        updated_at: "just now",
+      })
+      .select()
+      .single();
+    if (!data) return null;
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? {
+                      ...t,
+                      notes: [
+                        ...t.notes,
+                        {
+                          id: data.id,
+                          title: data.title,
+                          updatedAt: data.updated_at,
+                          sections: (data.sections as NoteSection[]) ?? [],
+                        },
+                      ],
+                    }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+    return data.id;
+  },
+
+
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (!user) return;
