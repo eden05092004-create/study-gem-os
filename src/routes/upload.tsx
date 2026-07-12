@@ -123,8 +123,8 @@ function UploadPage() {
         <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
           <UploadCloud className="h-7 w-7" />
         </div>
-        <p className="font-semibold text-foreground">גררו קבצים לכאן</p>
-        <p className="mt-1 text-sm text-muted-foreground">או לחצו לבחירה מהמכשיר</p>
+        <p className="font-semibold text-foreground">Drag files here</p>
+        <p className="mt-1 text-sm text-muted-foreground">or click to browse your device</p>
         <input
           ref={inputRef}
           type="file"
