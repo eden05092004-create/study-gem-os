@@ -337,6 +337,12 @@ export function ExamRunner({
                 </span>
               </div>
 
+              {question.imageUrl && (
+                <ImageBlock url={question.imageUrl} labels={question.imageLabels} />
+              )}
+
+
+
               {isCloze && (
                 <p className="mb-3 text-[15px] leading-7 text-muted-foreground">
                   {clozeParts.map((p, i) =>
