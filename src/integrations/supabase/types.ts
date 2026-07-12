@@ -14,7 +14,348 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      answers: {
+        Row: {
+          chosen_index: number
+          created_at: string
+          exam_id: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          chosen_index: number
+          created_at?: string
+          exam_id: string
+          id?: string
+          is_correct?: boolean
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          chosen_index?: number
+          created_at?: string
+          exam_id?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          color: string
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      exams: {
+        Row: {
+          created_at: string
+          duration_min: number
+          id: string
+          title: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_min?: number
+          id?: string
+          title: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_min?: number
+          id?: string
+          title?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      files: {
+        Row: {
+          added_at: string
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          size: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          name: string
+          size?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          size?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mistakes: {
+        Row: {
+          chosen_index: number
+          course_id: string
+          created_at: string
+          exam_id: string
+          id: string
+          question_id: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          chosen_index: number
+          course_id: string
+          created_at?: string
+          exam_id: string
+          id?: string
+          question_id: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          chosen_index?: number
+          course_id?: string
+          created_at?: string
+          exam_id?: string
+          id?: string
+          question_id?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mistakes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mistakes_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mistakes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mistakes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          created_at: string
+          id: string
+          sections: Json
+          title: string
+          topic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sections?: Json
+          title: string
+          topic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sections?: Json
+          title?: string
+          topic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          exam_id: string
+          explanations: Json
+          id: string
+          options: Json
+          position: number
+          text: string
+          user_id: string
+        }
+        Insert: {
+          correct_index?: number
+          created_at?: string
+          exam_id: string
+          explanations?: Json
+          id?: string
+          options?: Json
+          position?: number
+          text: string
+          user_id: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          exam_id?: string
+          explanations?: Json
+          id?: string
+          options?: Json
+          position?: number
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topics: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
