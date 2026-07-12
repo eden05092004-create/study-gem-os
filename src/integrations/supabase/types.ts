@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
-          chosen_index: number
+          blank_id: string
+          chosen_index: number | null
+          chosen_value: string | null
           created_at: string
           exam_id: string
           id: string
@@ -25,7 +27,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          chosen_index: number
+          blank_id?: string
+          chosen_index?: number | null
+          chosen_value?: string | null
           created_at?: string
           exam_id: string
           id?: string
@@ -34,7 +38,9 @@ export type Database = {
           user_id: string
         }
         Update: {
-          chosen_index?: number
+          blank_id?: string
+          chosen_index?: number | null
+          chosen_value?: string | null
           created_at?: string
           exam_id?: string
           id?: string
@@ -164,32 +170,47 @@ export type Database = {
       }
       mistakes: {
         Row: {
-          chosen_index: number
+          blank_id: string
+          blank_label: string | null
+          chosen_index: number | null
+          chosen_value: string | null
+          correct_value: string | null
           course_id: string
           created_at: string
           exam_id: string
           id: string
           question_id: string
+          question_text: string | null
           topic_id: string
           user_id: string
         }
         Insert: {
-          chosen_index: number
+          blank_id?: string
+          blank_label?: string | null
+          chosen_index?: number | null
+          chosen_value?: string | null
+          correct_value?: string | null
           course_id: string
           created_at?: string
           exam_id: string
           id?: string
           question_id: string
+          question_text?: string | null
           topic_id: string
           user_id: string
         }
         Update: {
-          chosen_index?: number
+          blank_id?: string
+          blank_label?: string | null
+          chosen_index?: number | null
+          chosen_value?: string | null
+          correct_value?: string | null
           course_id?: string
           created_at?: string
           exam_id?: string
           id?: string
           question_id?: string
+          question_text?: string | null
           topic_id?: string
           user_id?: string
         }
@@ -282,7 +303,8 @@ export type Database = {
       }
       questions: {
         Row: {
-          correct_index: number
+          blanks: Json
+          correct_index: number | null
           created_at: string
           exam_id: string
           explanations: Json
@@ -290,10 +312,12 @@ export type Database = {
           options: Json
           position: number
           text: string
+          type: string
           user_id: string
         }
         Insert: {
-          correct_index?: number
+          blanks?: Json
+          correct_index?: number | null
           created_at?: string
           exam_id: string
           explanations?: Json
@@ -301,10 +325,12 @@ export type Database = {
           options?: Json
           position?: number
           text: string
+          type?: string
           user_id: string
         }
         Update: {
-          correct_index?: number
+          blanks?: Json
+          correct_index?: number | null
           created_at?: string
           exam_id?: string
           explanations?: Json
@@ -312,6 +338,7 @@ export type Database = {
           options?: Json
           position?: number
           text?: string
+          type?: string
           user_id?: string
         }
         Relationships: [
