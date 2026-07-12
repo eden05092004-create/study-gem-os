@@ -3,14 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CalendarRange,
   Sparkles,
-  RefreshCw,
   CheckCircle2,
   Circle,
   Trash2,
   Plus,
   GraduationCap,
-  CheckCheck,
-  AlertTriangle,
 } from "lucide-react";
 import { AppShell, PageTitle } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
