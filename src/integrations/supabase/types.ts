@@ -271,6 +271,57 @@ export type Database = {
           },
         ]
       }
+      lectures: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          name: string
+          number: string
+          position: number
+          topic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          name?: string
+          number?: string
+          position?: number
+          topic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          number?: string
+          position?: number
+          topic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lectures_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lectures_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           content: string | null
