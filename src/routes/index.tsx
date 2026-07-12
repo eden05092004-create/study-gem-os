@@ -66,15 +66,28 @@ function Home() {
             {userName}
           </h1>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full text-muted-foreground"
-          onClick={signOut}
-          aria-label="Sign out"
-        >
-          <LogOut className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-muted-foreground"
+            aria-label="Settings"
+          >
+            <Link to="/settings">
+              <Settings className="h-5 w-5" />
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-muted-foreground"
+            onClick={signOut}
+            aria-label="Sign out"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
       </header>
 
 
