@@ -216,6 +216,16 @@ type State = {
     title: string,
     sections: NoteSection[],
   ) => Promise<void>;
+  addLectures: (
+    courseId: string,
+    topicId: string,
+    lectures: { number: string; name: string }[],
+  ) => Promise<void>;
+  deleteLecture: (
+    courseId: string,
+    topicId: string,
+    lectureId: string,
+  ) => Promise<void>;
 };
 
 function mapQuestion(q: {
