@@ -58,12 +58,24 @@ function Home() {
 
   return (
     <AppShell>
-      <header className="mb-6">
-        <p className="text-sm text-muted-foreground">שלום וברוך שובך 👋</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-          {userName}
-        </h1>
+      <header className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">שלום וברוך שובך 👋</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            {userName}
+          </h1>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full text-muted-foreground"
+          onClick={signOut}
+          aria-label="התנתק"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
       </header>
+
 
       <div className="mb-6 grid grid-cols-3 gap-3">
         {stats.map((s) => (
