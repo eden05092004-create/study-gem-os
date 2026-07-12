@@ -72,12 +72,19 @@ export type Exam = {
   questions: Question[];
 };
 
+export type Lecture = {
+  id: string;
+  number: string;
+  name: string;
+};
+
 export type Topic = {
   id: string;
   name: string;
   files: FileItem[];
   notes: Note[];
   exams: Exam[];
+  lectures: Lecture[];
 };
 
 export type Course = {
