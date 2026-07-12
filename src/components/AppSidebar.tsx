@@ -45,6 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/assistant", label: "AI Assistant", icon: Sparkles },
       { to: "/generator", label: "Question Generator", icon: HelpCircle },
       { to: "/quiz", label: "Quiz & Exam", icon: ClipboardCheck },
+      { to: "/upload-exam", label: "Upload Old Exam", icon: FileUp },
       { to: "/flashcards", label: "Flashcards", icon: Layers },
       { to: "/mistakes", label: "Mistake Notebook", icon: AlertOctagon },
     ],
