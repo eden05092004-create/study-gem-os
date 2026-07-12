@@ -466,6 +466,8 @@ export type Database = {
           exam_id: string
           explanations: Json
           id: string
+          image_labels: Json
+          image_url: string | null
           options: Json
           position: number
           text: string
@@ -479,6 +481,8 @@ export type Database = {
           exam_id: string
           explanations?: Json
           id?: string
+          image_labels?: Json
+          image_url?: string | null
           options?: Json
           position?: number
           text: string
@@ -492,6 +496,8 @@ export type Database = {
           exam_id?: string
           explanations?: Json
           id?: string
+          image_labels?: Json
+          image_url?: string | null
           options?: Json
           position?: number
           text?: string
