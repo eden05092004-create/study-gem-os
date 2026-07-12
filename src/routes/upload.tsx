@@ -75,10 +75,10 @@ function UploadPage() {
             setTopicId(c?.topics[0]?.id ?? "");
           }}
         >
-          <SelectTrigger className="rounded-xl" dir="rtl">
-            <SelectValue placeholder="בחר קורס" />
+          <SelectTrigger className="rounded-xl">
+            <SelectValue placeholder="Select course" />
           </SelectTrigger>
-          <SelectContent dir="rtl">
+          <SelectContent>
             {courses.map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.emoji} {c.name}
@@ -88,10 +88,10 @@ function UploadPage() {
         </Select>
 
         <Select value={topicId} onValueChange={setTopicId}>
-          <SelectTrigger className="rounded-xl" dir="rtl">
-            <SelectValue placeholder="בחר נושא" />
+          <SelectTrigger className="rounded-xl">
+            <SelectValue placeholder="Select topic" />
           </SelectTrigger>
-          <SelectContent dir="rtl">
+          <SelectContent>
             {selectedCourse?.topics.map((t) => (
               <SelectItem key={t.id} value={t.id}>
                 {t.name}
