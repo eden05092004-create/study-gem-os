@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Home, FolderClosed, CalendarRange, ClipboardList, AlertTriangle } from "lucide-react";
+import { Home, FolderClosed, Upload, CalendarRange, ClipboardList, AlertTriangle } from "lucide-react";
 
 const items = [
   { to: "/", label: "בית", icon: Home },
   { to: "/courses", label: "קורסים", icon: FolderClosed },
+  { to: "/upload", label: "העלאה", icon: Upload },
   { to: "/planner", label: "תכנון", icon: CalendarRange },
   { to: "/exams", label: "מבחנים", icon: ClipboardList },
   { to: "/mistakes", label: "טעויות", icon: AlertTriangle },
