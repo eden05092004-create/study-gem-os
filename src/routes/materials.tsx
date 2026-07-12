@@ -33,13 +33,22 @@ const TABS = [
 
 function MaterialsPage() {
   const [tab, setTab] = useState<string>("all");
+  const navigate = useNavigate();
   const courses = useStore((s) => s.courses);
+  const deleteFile = useStore((s) => s.deleteFile);
 
   const files = courses.flatMap((c) =>
     c.topics.flatMap((t) =>
-      (t.files ?? []).map((f) => ({ ...f, course: c.name, topic: t.name })),
+      (t.files ?? []).map((f) => ({
+        ...f,
+        course: c.name,
+        topic: t.name,
+        courseId: c.id,
+        topicId: t.id,
+      })),
     ),
   );
+
 
   const filtered =
     tab === "all"
