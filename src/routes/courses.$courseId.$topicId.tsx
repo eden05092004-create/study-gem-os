@@ -175,9 +175,26 @@ function TopicDetail() {
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() => toast("Coming soon: auto-generate an exam from your material ✨")}
+            onClick={() =>
+              navigate({
+                to: "/generate-exam/$courseId/$topicId",
+                params: { courseId, topicId },
+              })
+            }
           >
             <Sparkles className="h-4 w-4" /> Generate exam (AI)
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full rounded-full"
+            onClick={() =>
+              navigate({
+                to: "/upload-exam/$courseId/$topicId",
+                params: { courseId, topicId },
+              })
+            }
+          >
+            <UploadIcon className="h-4 w-4" /> Upload old exam (AI)
           </Button>
         </TabsContent>
 
