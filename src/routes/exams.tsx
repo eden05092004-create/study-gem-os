@@ -48,9 +48,9 @@ function Exams() {
               </div>
             </div>
             <div className="mb-3 flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{exam.questions.length} שאלות</span>
+              <span>{exam.questions.length} questions</span>
               <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" /> {exam.durationMin} דק'
+                <Clock className="h-3 w-3" /> {exam.durationMin} min
               </span>
             </div>
             <Button
@@ -66,7 +66,7 @@ function Exams() {
                 })
               }
             >
-              <Play className="h-4 w-4" /> התחל מבחן
+              <Play className="h-4 w-4" /> Start exam
             </Button>
           </Card>
         ))}
