@@ -201,6 +201,18 @@ function TopicDetail() {
           >
             <UploadIcon className="h-4 w-4" /> Upload old exam (AI)
           </Button>
+          <Button
+            variant="outline"
+            className="w-full rounded-full"
+            onClick={() =>
+              navigate({
+                to: "/generate-image-exam/$courseId/$topicId",
+                params: { courseId, topicId },
+              })
+            }
+          >
+            <FileImage className="h-4 w-4" /> Image questions (AI)
+          </Button>
         </TabsContent>
 
         <TabsContent value="cards">
