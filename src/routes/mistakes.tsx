@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExamRunner } from "@/components/ExamRunner";
 import { useStore } from "@/lib/store";
+import type { Question } from "@/lib/store";
 
 export const Route = createFileRoute("/mistakes")({
   component: Mistakes,
@@ -25,21 +26,25 @@ function Mistakes() {
     return [...map.entries()];
   }, [mistakes]);
 
+  // one entry per unique question for retry practice
+  const retryQuestions = useMemo(() => {
+    const map = new Map<string, Question>();
+    for (const m of mistakes) map.set(m.question.id, m.question);
+    return [...map.values()];
+  }, [mistakes]);
+
   if (retry) {
     return (
       <AppShell>
         <h1 className="mb-4 text-xl font-extrabold text-foreground">Practice mistakes</h1>
-        <ExamRunner
-          title="Practice mistakes"
-          questions={mistakes.map((m) => m.question)}
-        />
+        <ExamRunner title="Practice mistakes" questions={retryQuestions} />
       </AppShell>
     );
   }
 
   return (
     <AppShell>
-      <PageTitle title="Mistake notebook" subtitle="All the questions you got wrong, in one place" />
+      <PageTitle title="Mistake notebook" subtitle="Every blank you got wrong, in one place" />
 
       {mistakes.length === 0 ? (
         <Card className="border-none p-8 text-center">
@@ -51,11 +56,8 @@ function Mistakes() {
         </Card>
       ) : (
         <>
-          <Button
-            className="mb-5 w-full rounded-full"
-            onClick={() => setRetry(true)}
-          >
-            <RotateCcw className="h-4 w-4" /> Retry mistakes only ({mistakes.length})
+          <Button className="mb-5 w-full rounded-full" onClick={() => setRetry(true)}>
+            <RotateCcw className="h-4 w-4" /> Retry mistakes only ({retryQuestions.length})
           </Button>
 
           <div className="space-y-5">
@@ -69,18 +71,23 @@ function Mistakes() {
                     <Card key={m.id} className="border-none p-4">
                       <div className="mb-2 flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-                        <p className="text-sm font-semibold text-foreground">
-                          {m.question.text}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">
+                            {m.questionText}
+                          </p>
+                          {m.blankLabel && (
+                            <p className="text-xs text-muted-foreground">{m.blankLabel}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="space-y-1.5 pl-6 text-xs">
                         <div className="flex items-center gap-1.5 text-destructive">
                           <XCircle className="h-3.5 w-3.5 shrink-0" />
-                          Your answer: {m.question.options[m.chosenIndex]}
+                          Your answer: {m.chosenValue || "— (blank)"}
                         </div>
                         <div className="flex items-center gap-1.5 text-success">
                           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                          Correct: {m.question.options[m.question.correctIndex]}
+                          Correct: {m.correctValue}
                         </div>
                       </div>
                     </Card>
