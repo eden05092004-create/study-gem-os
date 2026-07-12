@@ -529,6 +529,8 @@ export const useStore = create<State>((set, get) => ({
         options: opts,
         correct_index: correctIndex,
         explanations: q.explanations ?? [],
+        image_url: q.imageUrl ?? null,
+        image_labels: q.imageLabels ?? [],
         position: i,
       };
     });
