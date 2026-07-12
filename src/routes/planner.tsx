@@ -54,9 +54,9 @@ function parseKey(k: string) {
   return new Date(y, m - 1, d);
 }
 
-function formatHebDate(k: string) {
+function formatPlanDate(k: string) {
   const d = parseKey(k);
-  return `יום ${WEEKDAYS[d.getDay()]} · ${d.getDate()}/${d.getMonth() + 1}`;
+  return `${WEEKDAYS[d.getDay()]} · ${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function generatePlan(
