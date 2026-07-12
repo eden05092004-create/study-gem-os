@@ -324,6 +324,7 @@ async function loadAll() {
 
 export const useStore = create<State>((set, get) => ({
   userName: "",
+  userEmail: "",
   studyHoursToday: 0,
   questionsSolved: 0,
   nextExamDate: new Date(Date.now() + 6 * 86400000).toISOString(),
