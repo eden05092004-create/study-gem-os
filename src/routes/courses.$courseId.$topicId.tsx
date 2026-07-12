@@ -51,6 +51,9 @@ function TopicDetail() {
   const deleteFile = useStore((s) => s.deleteFile);
   const deleteExam = useStore((s) => s.deleteExam);
   const deleteNote = useStore((s) => s.deleteNote);
+  const addLectures = useStore((s) => s.addLectures);
+  const deleteLecture = useStore((s) => s.deleteLecture);
+  const [lectureInput, setLectureInput] = useState("");
 
   if (!course || !topic) {
     return (
