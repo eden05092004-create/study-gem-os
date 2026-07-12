@@ -361,6 +361,7 @@ export const useStore = create<State>((set, get) => ({
   reset: () =>
     set({
       userName: "",
+      userEmail: "",
       courses: [],
       mistakes: [],
       questionsSolved: 0,
