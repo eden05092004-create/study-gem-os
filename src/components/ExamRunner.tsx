@@ -146,7 +146,7 @@ export function ExamRunner({
     <div className="pt-1">
       <div className="mb-4 flex items-center justify-between">
         <span className="text-sm font-semibold text-foreground">
-          שאלה {current + 1} מתוך {questions.length}
+          Question {current + 1} of {questions.length}
         </span>
         <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
           <Timer className="h-4 w-4" /> {String(Math.floor((current + 1) * 0.5)).padStart(2, "0")}:00
