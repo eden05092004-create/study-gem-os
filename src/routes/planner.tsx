@@ -388,7 +388,7 @@ function Planner() {
                       <button
                         key={it.id}
                         onClick={() => toggleItem(day.date, it.id)}
-                        className="flex w-full items-center gap-3 rounded-xl bg-muted/40 px-3 py-2.5 text-right"
+                        className="flex w-full items-center gap-3 rounded-xl bg-muted/40 px-3 py-2.5 text-left"
                       >
                         {it.done ? (
                           <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
@@ -406,8 +406,8 @@ function Planner() {
                             {it.topicName}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {it.type === "review" ? "🔁 חזרה" : "📖 לימוד"} ·{" "}
-                            {it.minutes} דק׳
+                            {it.type === "review" ? "🔁 Review" : "📖 Study"} ·{" "}
+                            {it.minutes} min
                           </span>
                         </span>
                       </button>
