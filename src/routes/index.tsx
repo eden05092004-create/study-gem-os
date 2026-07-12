@@ -1,8 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Clock, CalendarClock, CheckCircle2, Sparkles, ArrowLeft } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  Clock,
+  CalendarClock,
+  CheckCircle2,
+  Sparkles,
+  ArrowLeft,
+  LogOut,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
