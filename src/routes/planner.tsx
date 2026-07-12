@@ -198,23 +198,23 @@ function Planner() {
 
   const handleGenerate = async () => {
     if (!examDate) {
-      toast.error("בחרו תאריך מבחן");
+      toast.error("Choose an exam date");
       return;
     }
     if (selectedTopics.length === 0) {
-      toast.error("בחרו לפחות נושא אחד");
+      toast.error("Select at least one topic");
       return;
     }
     const chosen = topicOptions.filter((t) => selectedTopics.includes(t.id));
     const generated = generatePlan(examDate, chosen, weeklyHours);
     if (generated.length === 0) {
-      toast.error("אין ימי לימוד זמינים עד תאריך המבחן — עדכנו שעות/תאריך");
+      toast.error("No study days available before the exam — update your hours or date");
       return;
     }
     setDays(generated);
     setShowForm(false);
     await persist(generated);
-    toast.success("נבנתה תוכנית לימודים 🎉");
+    toast.success("Study plan created 🎉");
   };
 
   const toggleItem = async (dayDate: string, itemId: string) => {
