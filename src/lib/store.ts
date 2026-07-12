@@ -797,4 +797,30 @@ export const useStore = create<State>((set, get) => ({
       ),
     }));
   },
+  updateNote: async (courseId, topicId, noteId, title, sections) => {
+    const updatedAt = new Date().toISOString();
+    await supabase
+      .from("notes")
+      .update({ title, sections, updated_at: updatedAt })
+      .eq("id", noteId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? {
+                      ...t,
+                      notes: t.notes.map((n) =>
+                        n.id === noteId ? { ...n, title, sections, updatedAt } : n,
+                      ),
+                    }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
 }));
