@@ -27,6 +27,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CoursesIndexRouteImport } from './routes/courses.index'
 import { Route as UploadExamCourseIdTopicIdRouteImport } from './routes/upload-exam.$courseId.$topicId'
 import { Route as GenerateNotesCourseIdTopicIdRouteImport } from './routes/generate-notes.$courseId.$topicId'
 import { Route as GenerateImageExamCourseIdTopicIdRouteImport } from './routes/generate-image-exam.$courseId.$topicId'
@@ -126,6 +127,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoursesIndexRoute = CoursesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CoursesRoute,
+} as any)
 const UploadExamCourseIdTopicIdRoute =
   UploadExamCourseIdTopicIdRouteImport.update({
     id: '/$courseId/$topicId',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
+  '/courses/': typeof CoursesIndexRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
@@ -207,7 +214,6 @@ export interface FileRoutesByTo {
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
-  '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/flashcards': typeof FlashcardsRoute
   '/generator': typeof GeneratorRoute
@@ -221,6 +227,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
+  '/courses': typeof CoursesIndexRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
@@ -250,6 +257,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
+  '/courses/': typeof CoursesIndexRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
@@ -280,6 +288,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/upload'
     | '/upload-exam'
+    | '/courses/'
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
@@ -294,7 +303,6 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/auth'
     | '/calendar'
-    | '/courses'
     | '/exams'
     | '/flashcards'
     | '/generator'
@@ -308,6 +316,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/upload'
     | '/upload-exam'
+    | '/courses'
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
@@ -336,6 +345,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/upload'
     | '/upload-exam'
+    | '/courses/'
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
@@ -500,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/courses/': {
+      id: '/courses/'
+      path: '/'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof CoursesIndexRouteImport
+      parentRoute: typeof CoursesRoute
+    }
     '/upload-exam/$courseId/$topicId': {
       id: '/upload-exam/$courseId/$topicId'
       path: '/$courseId/$topicId'
@@ -560,10 +577,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface CoursesRouteChildren {
+  CoursesIndexRoute: typeof CoursesIndexRoute
   CoursesCourseIdTopicIdRoute: typeof CoursesCourseIdTopicIdRoute
 }
 
 const CoursesRouteChildren: CoursesRouteChildren = {
+  CoursesIndexRoute: CoursesIndexRoute,
   CoursesCourseIdTopicIdRoute: CoursesCourseIdTopicIdRoute,
 }
 
