@@ -416,6 +416,27 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          anthropic_api_key: string | null
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anthropic_api_key?: string | null
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anthropic_api_key?: string | null
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
