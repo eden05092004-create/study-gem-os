@@ -206,6 +206,8 @@ function mapQuestion(q: {
   correct_index: number | null;
   blanks: unknown;
   explanations: unknown;
+  image_url?: string | null;
+  image_labels?: unknown;
 }): Question {
   const type = (q.type as QuestionType) ?? "mcq";
   let blanks = (q.blanks as Blank[]) ?? [];
@@ -226,6 +228,8 @@ function mapQuestion(q: {
     text: q.text,
     blanks,
     explanations: (q.explanations as string[]) ?? [],
+    imageUrl: q.image_url ?? undefined,
+    imageLabels: (q.image_labels as ImageLabel[]) ?? [],
   };
 }
 
