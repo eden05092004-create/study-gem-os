@@ -1,8 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Clock, CalendarClock, CheckCircle2, Sparkles, ArrowLeft } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  Clock,
+  CalendarClock,
+  CheckCircle2,
+  Sparkles,
+  ArrowLeft,
+  LogOut,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -16,6 +24,13 @@ function daysLeft(iso: string) {
 function Home() {
   const { userName, studyHoursToday, questionsSolved, nextExamDate, courses } =
     useStore();
+  const navigate = useNavigate();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  };
+
 
   const stats = [
     {
@@ -43,12 +58,24 @@ function Home() {
 
   return (
     <AppShell>
-      <header className="mb-6">
-        <p className="text-sm text-muted-foreground">שלום וברוך שובך 👋</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-          {userName}
-        </h1>
+      <header className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">שלום וברוך שובך 👋</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            {userName}
+          </h1>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full text-muted-foreground"
+          onClick={signOut}
+          aria-label="התנתק"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
       </header>
+
 
       <div className="mb-6 grid grid-cols-3 gap-3">
         {stats.map((s) => (
