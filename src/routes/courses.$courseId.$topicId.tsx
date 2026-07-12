@@ -79,7 +79,7 @@ function TopicDetail() {
         </TabsList>
 
         <TabsContent value="files" className="space-y-3">
-          {topic.files.length === 0 && <EmptyState text="עדיין אין קבצים בנושא הזה" />}
+          {topic.files.length === 0 && <EmptyState text="No files in this topic yet" />}
           {topic.files.map((f) => {
             const Icon = kindIcon[f.kind];
             return (
@@ -92,7 +92,7 @@ function TopicDetail() {
                     {f.name}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {f.size} · נוסף {f.addedAt}
+                    {f.size} · added {f.addedAt}
                   </div>
                 </div>
               </Card>
@@ -100,7 +100,7 @@ function TopicDetail() {
           })}
           <Button asChild variant="outline" className="w-full rounded-full">
             <Link to="/upload">
-              <UploadIcon className="h-4 w-4" /> העלה קובץ לנושא
+              <UploadIcon className="h-4 w-4" /> Upload a file to this topic
             </Link>
           </Button>
         </TabsContent>
