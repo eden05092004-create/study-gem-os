@@ -202,6 +202,13 @@ type State = {
   deleteFile: (courseId: string, topicId: string, fileId: string) => Promise<void>;
   deleteExam: (courseId: string, topicId: string, examId: string) => Promise<void>;
   deleteNote: (courseId: string, topicId: string, noteId: string) => Promise<void>;
+  updateNote: (
+    courseId: string,
+    topicId: string,
+    noteId: string,
+    title: string,
+    sections: NoteSection[],
+  ) => Promise<void>;
 };
 
 function mapQuestion(q: {
