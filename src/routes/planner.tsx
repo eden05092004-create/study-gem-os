@@ -260,7 +260,7 @@ function Planner() {
           {/* exam date */}
           <Card className="border-none p-4">
             <Label className="mb-2 flex items-center gap-2 text-sm font-bold">
-              <CalendarRange className="h-4 w-4 text-primary" /> תאריך המבחן
+              <CalendarRange className="h-4 w-4 text-primary" /> Exam date
             </Label>
             <Input
               type="date"
@@ -273,11 +273,11 @@ function Planner() {
           {/* topics */}
           <Card className="border-none p-4">
             <Label className="mb-3 flex items-center gap-2 text-sm font-bold">
-              <BookOpen className="h-4 w-4 text-primary" /> נושאים ללימוד
+              <BookOpen className="h-4 w-4 text-primary" /> Topics to cover
             </Label>
             {topicOptions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                אין נושאים עדיין — צרו קורסים ונושאים תחילה.
+                No topics yet — create courses and topics first.
               </p>
             ) : (
               <div className="space-y-3">
