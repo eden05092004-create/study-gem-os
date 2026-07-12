@@ -34,19 +34,19 @@ function Home() {
 
   const stats = [
     {
-      label: "שעות לימוד היום",
+      label: "Study hours today",
       value: studyHoursToday.toString(),
       icon: Clock,
       tint: "bg-primary/10 text-primary",
     },
     {
-      label: "ימים למבחן הבא",
+      label: "Days until next exam",
       value: daysLeft(nextExamDate).toString(),
       icon: CalendarClock,
       tint: "bg-accent/40 text-accent-foreground",
     },
     {
-      label: "שאלות שנפתרו",
+      label: "Questions solved",
       value: questionsSolved.toString(),
       icon: CheckCircle2,
       tint: "bg-success/15 text-success",
