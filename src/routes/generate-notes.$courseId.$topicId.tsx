@@ -263,7 +263,7 @@ function GenerateNotesPage() {
       </Button>
       {loading && (
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          This can take up to a minute for detailed notes.
+          {progress || "Generating notes in parts to avoid timeouts…"}
         </p>
       )}
       <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
