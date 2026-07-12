@@ -247,6 +247,90 @@ async function callAnthropicNotes(
   };
 }
 
+/** Canonical note sections, in required order. */
+export const NOTE_SECTION_SPECS: {
+  key: string;
+  title: string;
+  icon: string;
+  guide: string;
+}[] = [
+  { key: "overview", title: "Overview", icon: "📌", guide: "A high-level orientation to the whole topic." },
+  { key: "full", title: "Full Content", icon: "📖", guide: "Use markdown-style headings and textbook-level explanations covering ALL material. This is the core section — cover every slide/page/section with zero omission." },
+  { key: "tables", title: "Comparison Tables", icon: "📊", guide: "Create comparison tables where relevant; render as plain-text tables." },
+  { key: "highyield", title: "High Yield", icon: "⭐", guide: "The points most likely to appear on the exam." },
+  { key: "clinical", title: "Clinical Correlations", icon: "🏥", guide: "Clinical relevance and correlations." },
+  { key: "mistakes", title: "Common Mistakes", icon: "⚠️", guide: "Common misconceptions and errors students make." },
+  { key: "details", title: "Small Details", icon: "🔍", guide: "Exact numbers, exceptions, footnotes, specific values, named researchers — the easily-missed details." },
+  { key: "quickcheck", title: "Quick Check", icon: "❓", guide: "3-4 self-test questions with answers." },
+  { key: "coverage", title: "Coverage Check", icon: "✅", guide: "List which slides/pages/sections were covered, confirming nothing was omitted." },
+];
+
+export const generateNotesChunk = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { subject: string; detail: string; sectionKeys?: string[]; part?: number; total?: number }) => {
+      const valid = new Set(NOTE_SECTION_SPECS.map((s) => s.key));
+      const keys = Array.isArray(input.sectionKeys)
+        ? input.sectionKeys.filter((k) => valid.has(k))
+        : [];
+      return {
+        subject: String(input.subject ?? "").slice(0, 2000),
+        detail: ["detailed", "balanced", "concise"].includes(input.detail)
+          ? input.detail
+          : "balanced",
+        sectionKeys: keys.length ? keys : NOTE_SECTION_SPECS.map((s) => s.key),
+        part: Math.max(1, Number(input.part) || 1),
+        total: Math.max(1, Number(input.total) || 1),
+      };
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const key = await getKey(context.supabase, context.userId);
+    if (!key) throw new Error("AI features require an API key.");
+
+    const detailGuide =
+      data.detail === "detailed"
+        ? "Be exhaustive. Expand every point into thorough textbook-level prose. Long explanations."
+        : data.detail === "concise"
+          ? "Keep explanations tight and focused, but still complete — never drop a slide or page."
+          : "Balanced textbook depth: clear, complete explanations without excessive padding.";
+
+    const specs = NOTE_SECTION_SPECS.filter((s) => data.sectionKeys.includes(s.key));
+    const sectionList = specs
+      .map((s, i) => `${i + 1}. key "${s.key}", title "${s.title}", icon "${s.icon}" — ${s.guide}`)
+      .join("\n");
+
+    const system = `You are an expert medical school professor writing professional, textbook-style study notes from lecture material.
+
+ABSOLUTE RULES:
+- ZERO OMISSION: every single slide / page / section of the source material MUST be represented in the notes. Do NOT drop anything as "unimportant" — professors test tiny details.
+- This is NOT a summary. Expand terse bullet points into full, flowing textbook-quality explanations. Teach the concept as a textbook chapter would.
+- Detail level: ${detailGuide}
+- You are writing PART ${data.part} of ${data.total} of a larger note. Produce ONLY the sections requested below, but base them on the ENTIRE source material so nothing is omitted.
+
+Return via the save_notes tool. Provide EXACTLY these sections, in this order, using these exact keys/titles/icons:
+${sectionList}
+
+Write the "body" of each section as readable text (paragraphs, headings, lists). Set "title" to a short note title.`;
+    const prompt = `Source material to turn into complete textbook-style notes:\n${data.subject}\n\nProduce ONLY the requested sections now, covering every slide/page with zero omission.`;
+
+    const out = await callAnthropicNotes(key, system, [
+      { type: "text", text: prompt },
+    ]);
+    // Keep only requested sections, in canonical order.
+    const byKey = new Map(out.sections.map((s) => [s.key, s]));
+    const sections = specs
+      .map((spec) => {
+        const s = byKey.get(spec.key);
+        return s
+          ? { ...s, title: spec.title, icon: spec.icon }
+          : null;
+      })
+      .filter((s): s is AiNoteSection => !!s);
+
+    return { title: out.title, sections, coverage: out.coverage };
+  });
+
 export const generateNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(

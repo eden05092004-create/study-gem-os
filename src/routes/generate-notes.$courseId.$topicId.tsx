@@ -8,12 +8,36 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
-import { getAiKeyStatus, generateNotes } from "@/lib/ai.functions";
+import { getAiKeyStatus, generateNotesChunk } from "@/lib/ai.functions";
+import type { AiNoteSection } from "@/lib/ai.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/generate-notes/$courseId/$topicId")({
   component: GenerateNotesPage,
 });
+
+// Split the 9 sections into small batches so each AI call stays fast and
+// never hits the request timeout. Zero-omission is preserved because every
+// batch is instructed to read the whole source; batches only limit output.
+const SECTION_BATCHES: { keys: string[]; label: string }[] = [
+  { keys: ["overview"], label: "Overview" },
+  { keys: ["full"], label: "Full Content" },
+  { keys: ["tables", "highyield", "clinical"], label: "Tables & High Yield" },
+  { keys: ["mistakes", "details", "quickcheck", "coverage"], label: "Details & Review" },
+];
+
+const SECTION_ORDER = [
+  "overview",
+  "full",
+  "tables",
+  "highyield",
+  "clinical",
+  "mistakes",
+  "details",
+  "quickcheck",
+  "coverage",
+];
+
 
 const DETAIL_OPTIONS = [
   { value: "detailed", label: "Detailed", desc: "Exhaustive, longest" },
@@ -28,12 +52,13 @@ function GenerateNotesPage() {
   const topic = course?.topics.find((t) => t.id === topicId);
   const addNote = useStore((s) => s.addNote);
   const checkStatus = useServerFn(getAiKeyStatus);
-  const runGenerate = useServerFn(generateNotes);
+  const runChunk = useServerFn(generateNotesChunk);
 
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [detail, setDetail] = useState<string>("balanced");
   const [fileId, setFileId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<string>("");
 
   useEffect(() => {
     checkStatus().then((r) => setHasKey(r.hasKey)).catch(() => setHasKey(false));
@@ -61,17 +86,69 @@ function GenerateNotesPage() {
       return;
     }
     setLoading(true);
+    setProgress("");
     try {
       const file = topic.files.find((f) => f.id === fileId);
       const subject = `Course: ${course.name}. Topic: ${topic.name}. Source file: ${
         file?.name ?? topic.files.map((f) => f.name).join(", ")
       }.`;
-      const res = await runGenerate({ data: { subject, detail } });
-      if (!res.sections.length) {
+
+      const total = SECTION_BATCHES.length;
+      const collected: AiNoteSection[] = [];
+      let title = "Study notes";
+      let coverage = "";
+
+      for (let i = 0; i < total; i++) {
+        const batch = SECTION_BATCHES[i];
+        setProgress(`Generating ${batch.label} — part ${i + 1} of ${total}…`);
+
+        // Retry each chunk once before failing the whole job.
+        let res: Awaited<ReturnType<typeof runChunk>> | null = null;
+        let lastErr: unknown = null;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            res = await runChunk({
+              data: {
+                subject,
+                detail,
+                sectionKeys: batch.keys,
+                part: i + 1,
+                total,
+              },
+            });
+            break;
+          } catch (err) {
+            lastErr = err;
+            if (attempt === 0) setProgress(`Retrying ${batch.label} — part ${i + 1} of ${total}…`);
+          }
+        }
+        if (!res) {
+          throw new Error(
+            `Failed on "${batch.label}" (part ${i + 1} of ${total}): ${
+              lastErr instanceof Error ? lastErr.message : "unknown error"
+            }`,
+          );
+        }
+
+        if (res.title && res.title !== "Study notes") title = res.title;
+        if (res.coverage) coverage = res.coverage;
+        collected.push(...res.sections);
+      }
+
+      // Merge and order all collected sections.
+      const byKey = new Map(collected.map((s) => [s.key, s]));
+      const sections = SECTION_ORDER.map((k) => byKey.get(k)).filter(
+        (s): s is AiNoteSection => !!s,
+      );
+
+      if (!sections.length) {
         toast.error("The AI returned no notes. Try again.");
         return;
       }
-      const noteId = await addNote(courseId, topicId, res.title, res.sections);
+
+      void coverage;
+      setProgress("Saving notes…");
+      const noteId = await addNote(courseId, topicId, title, sections);
       toast.success("Notes generated");
       if (noteId) {
         navigate({
@@ -85,8 +162,10 @@ function GenerateNotesPage() {
       toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setLoading(false);
+      setProgress("");
     }
   };
+
 
   return (
     <AppShell>
@@ -184,7 +263,7 @@ function GenerateNotesPage() {
       </Button>
       {loading && (
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          This can take up to a minute for detailed notes.
+          {progress || "Generating notes in parts to avoid timeouts…"}
         </p>
       )}
       <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
