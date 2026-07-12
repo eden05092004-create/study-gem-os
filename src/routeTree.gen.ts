@@ -27,6 +27,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NotesIndexRouteImport } from './routes/notes.index'
 import { Route as CoursesIndexRouteImport } from './routes/courses.index'
 import { Route as UploadExamCourseIdTopicIdRouteImport } from './routes/upload-exam.$courseId.$topicId'
 import { Route as GenerateNotesCourseIdTopicIdRouteImport } from './routes/generate-notes.$courseId.$topicId'
@@ -127,6 +128,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotesIndexRoute = NotesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => NotesRoute,
+} as any)
 const CoursesIndexRoute = CoursesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
   '/courses/': typeof CoursesIndexRoute
+  '/notes/': typeof NotesIndexRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
@@ -219,7 +226,6 @@ export interface FileRoutesByTo {
   '/generator': typeof GeneratorRoute
   '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
-  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
   '/progress': typeof ProgressRoute
   '/quiz': typeof QuizRoute
@@ -228,6 +234,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
   '/courses': typeof CoursesIndexRoute
+  '/notes': typeof NotesIndexRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
@@ -258,6 +265,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
   '/courses/': typeof CoursesIndexRoute
+  '/notes/': typeof NotesIndexRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
@@ -289,6 +297,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/upload-exam'
     | '/courses/'
+    | '/notes/'
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
@@ -308,7 +317,6 @@ export interface FileRouteTypes {
     | '/generator'
     | '/materials'
     | '/mistakes'
-    | '/notes'
     | '/planner'
     | '/progress'
     | '/quiz'
@@ -317,6 +325,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/upload-exam'
     | '/courses'
+    | '/notes'
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/upload-exam'
     | '/courses/'
+    | '/notes/'
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
@@ -510,6 +520,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notes/': {
+      id: '/notes/'
+      path: '/'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof NotesIndexRouteImport
+      parentRoute: typeof NotesRoute
+    }
     '/courses/': {
       id: '/courses/'
       path: '/'
@@ -590,10 +607,12 @@ const CoursesRouteWithChildren =
   CoursesRoute._addFileChildren(CoursesRouteChildren)
 
 interface NotesRouteChildren {
+  NotesIndexRoute: typeof NotesIndexRoute
   NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
 }
 
 const NotesRouteChildren: NotesRouteChildren = {
+  NotesIndexRoute: NotesIndexRoute,
   NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
 }
 
