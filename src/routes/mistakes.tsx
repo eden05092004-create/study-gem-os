@@ -94,7 +94,7 @@ function Mistakes() {
                     <Card key={m.id} className="border-none p-4">
                       <div className="mb-2 flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-foreground">
                             {m.questionText}
                           </p>
@@ -102,7 +102,16 @@ function Mistakes() {
                             <p className="text-xs text-muted-foreground">{m.blankLabel}</p>
                           )}
                         </div>
+                        <ConfirmDelete
+                          title="Delete this mistake?"
+                          description="This removes this entry from your mistake notebook."
+                          onConfirm={() => {
+                            deleteMistake(m.id);
+                            toast.success("Mistake removed");
+                          }}
+                        />
                       </div>
+
                       <div className="space-y-1.5 pl-6 text-xs">
                         <div className="flex items-center gap-1.5 text-destructive">
                           <XCircle className="h-3.5 w-3.5 shrink-0" />
