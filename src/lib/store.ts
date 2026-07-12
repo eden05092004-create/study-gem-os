@@ -159,6 +159,12 @@ type State = {
     durationMin: number,
     questions: NewQuestion[],
   ) => Promise<void>;
+  addNote: (
+    courseId: string,
+    topicId: string,
+    title: string,
+    sections: NoteSection[],
+  ) => Promise<string | null>;
   recordExamResult: (
     courseId: string,
     topicId: string,
