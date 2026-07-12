@@ -140,8 +140,9 @@ function Courses() {
                               {t.name}
                             </div>
                             <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                              <FileText className="h-3 w-3" /> {t.files.length} files ·{" "}
-                              {t.exams.length} exams
+                              <FileText className="h-3 w-3" /> {t.lectures.length}{" "}
+                              lectures · {t.files.length} files · {t.exams.length}{" "}
+                              exams
                             </div>
                           </div>
                         </Card>
