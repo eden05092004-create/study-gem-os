@@ -323,12 +323,20 @@ export const parseOldExam = createServerFn({ method: "POST" })
     const key = await getKey(context.supabase, context.userId);
     if (!key) throw new Error("AI features require an API key.");
 
-    const system = `You transcribe an existing exam PDF into structured questions. CRITICAL RULES:
-- Reproduce every question and every answer option EXACTLY as written. Do NOT reword, translate, fix grammar, or "improve" anything. Keep original typos and punctuation.
-- The correct answer is taken ONLY from the value in brackets on a line that says "The correct answer is:". NEVER infer the correct answer from what a student selected or from your own knowledge. If no such line exists for a question, leave correct as an empty string.
-- Classify each question into one of: mcq, cloze, matching, truefalse, short (use mcq for standard multiple choice).
-- Report "detected" = number of questions you found in the PDF, and "converted" = number you successfully converted with a usable structure.
-Blank format per type is the same as our engine: mcq has one blank with options=choices and correct=the bracketed answer.`;
+    const system = `You transcribe an EXISTING exam PDF/document into structured questions for an interactive exam engine. CRITICAL RULES — follow exactly:
+
+1. REPRODUCE EXACTLY: copy every question, passage and answer option EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", or normalize anything. Keep original typos, punctuation, casing and spacing.
+
+2. CLOZE IS THE DEFAULT: most questions are CLOZE — a single passage containing MULTIPLE blanks, each blank rendered as a dropdown. Keep the whole passage intact as ONE question of type "cloze". Do NOT split a multi-blank passage into several separate questions. In the passage "text", replace each blank with a token [[1]], [[2]], [[3]] … in reading order. Create one entry in blanks[] per token, with id equal to the token number ("1", "2", …), options = the exact dropdown choices for that blank, and correct = the exact bracketed correct answer for that blank.
+
+3. CORRECT ANSWERS SOURCE: the correct answer for a blank/question is taken ONLY from the text in square brackets on a line reading "The correct answer is:" (e.g. "The correct answer is: [X]"). For a passage with multiple blanks these appear in order — map them to the blanks in the same order. NEVER infer the correct answer from what the student selected, from highlighting, or from your own knowledge. If no "The correct answer is:" line exists for a blank, leave its correct as an empty string.
+
+4. PARTIAL CREDIT: each blank counts as 1 point, so include every blank in a passage.
+
+5. Other formats: use "matching" (one blank per item, label = item, options = candidate descriptions), "truefalse" (one blank per statement, label = statement, options ["True","False"]), "short" (one blank, empty options, correct = accepted answer), or "mcq" only for a standalone single-answer multiple-choice question (one blank, options = choices).
+
+6. COMPLETENESS: report "detected" = number of questions found in the document, and "converted" = number successfully converted with a usable structure. These should match when everything converts.`;
+
     const out = await callAnthropic(key, system, [
       {
         type: "document",
