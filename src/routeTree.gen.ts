@@ -18,6 +18,7 @@ import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UploadExamCourseIdTopicIdRouteImport } from './routes/upload-exam.$courseId.$topicId'
 import { Route as GenerateExamCourseIdTopicIdRouteImport } from './routes/generate-exam.$courseId.$topicId'
 import { Route as CreateExamCourseIdTopicIdRouteImport } from './routes/create-exam.$courseId.$topicId'
 import { Route as CoursesCourseIdTopicIdRouteImport } from './routes/courses.$courseId.$topicId'
@@ -69,6 +70,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UploadExamCourseIdTopicIdRoute =
+  UploadExamCourseIdTopicIdRouteImport.update({
+    id: '/upload-exam/$courseId/$topicId',
+    path: '/upload-exam/$courseId/$topicId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const GenerateExamCourseIdTopicIdRoute =
   GenerateExamCourseIdTopicIdRouteImport.update({
     id: '/generate-exam/$courseId/$topicId',
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
+  '/upload-exam/$courseId/$topicId': typeof UploadExamCourseIdTopicIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
   '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
 }
@@ -128,6 +136,7 @@ export interface FileRoutesByTo {
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
+  '/upload-exam/$courseId/$topicId': typeof UploadExamCourseIdTopicIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
   '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
 }
@@ -145,6 +154,7 @@ export interface FileRoutesById {
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
   '/create-exam/$courseId/$topicId': typeof CreateExamCourseIdTopicIdRoute
   '/generate-exam/$courseId/$topicId': typeof GenerateExamCourseIdTopicIdRoute
+  '/upload-exam/$courseId/$topicId': typeof UploadExamCourseIdTopicIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
   '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
 }
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
+    | '/upload-exam/$courseId/$topicId'
     | '/exam/$courseId/$topicId/$examId'
     | '/notes/$courseId/$topicId/$noteId'
   fileRoutesByTo: FileRoutesByTo
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
+    | '/upload-exam/$courseId/$topicId'
     | '/exam/$courseId/$topicId/$examId'
     | '/notes/$courseId/$topicId/$noteId'
   id:
@@ -195,6 +207,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId/$topicId'
     | '/create-exam/$courseId/$topicId'
     | '/generate-exam/$courseId/$topicId'
+    | '/upload-exam/$courseId/$topicId'
     | '/exam/$courseId/$topicId/$examId'
     | '/notes/$courseId/$topicId/$noteId'
   fileRoutesById: FileRoutesById
@@ -211,6 +224,7 @@ export interface RootRouteChildren {
   UploadRoute: typeof UploadRoute
   CreateExamCourseIdTopicIdRoute: typeof CreateExamCourseIdTopicIdRoute
   GenerateExamCourseIdTopicIdRoute: typeof GenerateExamCourseIdTopicIdRoute
+  UploadExamCourseIdTopicIdRoute: typeof UploadExamCourseIdTopicIdRoute
   ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
   NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
 }
@@ -280,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/upload-exam/$courseId/$topicId': {
+      id: '/upload-exam/$courseId/$topicId'
+      path: '/upload-exam/$courseId/$topicId'
+      fullPath: '/upload-exam/$courseId/$topicId'
+      preLoaderRoute: typeof UploadExamCourseIdTopicIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/generate-exam/$courseId/$topicId': {
       id: '/generate-exam/$courseId/$topicId'
       path: '/generate-exam/$courseId/$topicId'
@@ -341,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadRoute: UploadRoute,
   CreateExamCourseIdTopicIdRoute: CreateExamCourseIdTopicIdRoute,
   GenerateExamCourseIdTopicIdRoute: GenerateExamCourseIdTopicIdRoute,
+  UploadExamCourseIdTopicIdRoute: UploadExamCourseIdTopicIdRoute,
   ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
   NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
 }
