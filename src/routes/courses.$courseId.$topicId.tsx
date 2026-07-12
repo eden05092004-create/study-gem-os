@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   ChevronLeft,
   FileText,
@@ -8,6 +9,8 @@ import {
   NotebookPen,
   ClipboardList,
   Layers,
+  GraduationCap,
+  Plus,
   Upload as UploadIcon,
   Sparkles,
   Play,
@@ -15,10 +18,13 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 import { useStore, type FileItem } from "@/lib/store";
+import { parseLectures } from "@/lib/lectures";
 
 export const Route = createFileRoute("/courses/$courseId/$topicId")({
   component: TopicDetail,
@@ -45,6 +51,9 @@ function TopicDetail() {
   const deleteFile = useStore((s) => s.deleteFile);
   const deleteExam = useStore((s) => s.deleteExam);
   const deleteNote = useStore((s) => s.deleteNote);
+  const addLectures = useStore((s) => s.addLectures);
+  const deleteLecture = useStore((s) => s.deleteLecture);
+  const [lectureInput, setLectureInput] = useState("");
 
   if (!course || !topic) {
     return (
@@ -68,8 +77,11 @@ function TopicDetail() {
         <span className="text-2xl">{course.emoji}</span> {topic.name}
       </h1>
 
-      <Tabs defaultValue="files">
-        <TabsList className="mb-4 grid w-full grid-cols-4 rounded-full">
+      <Tabs defaultValue="lectures">
+        <TabsList className="mb-4 grid w-full grid-cols-5 rounded-full">
+          <TabsTrigger value="lectures" className="rounded-full text-xs">
+            <GraduationCap className="mr-1 h-3.5 w-3.5" /> Lectures
+          </TabsTrigger>
           <TabsTrigger value="files" className="rounded-full text-xs">
             <FileText className="mr-1 h-3.5 w-3.5" /> Files
           </TabsTrigger>
@@ -83,6 +95,75 @@ function TopicDetail() {
             <Layers className="mr-1 h-3.5 w-3.5" /> Flashcards
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="lectures" className="space-y-3">
+          <Card className="border-none p-4">
+            <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
+              <GraduationCap className="h-4 w-4 text-primary" /> Add lectures
+            </div>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Type or paste a list — one lecture per line, e.g.
+              <br />
+              <span className="font-mono">1002 – History of Life on Earth</span>
+            </p>
+            <Textarea
+              value={lectureInput}
+              onChange={(e) => setLectureInput(e.target.value)}
+              placeholder={"1002 – History of Life on Earth\n1003 – Structure of Prokaryotic Cell"}
+              className="min-h-24 rounded-xl font-mono text-sm"
+            />
+            <Button
+              className="mt-3 w-full rounded-full"
+              onClick={async () => {
+                const parsed = parseLectures(lectureInput);
+                if (parsed.length === 0) {
+                  toast.error("Nothing to add");
+                  return;
+                }
+                await addLectures(courseId, topicId, parsed);
+                setLectureInput("");
+                toast.success(
+                  `${parsed.length} lecture${parsed.length > 1 ? "s" : ""} added`,
+                );
+              }}
+            >
+              <Plus className="h-4 w-4" /> Add lectures
+            </Button>
+          </Card>
+
+          {topic.lectures.length === 0 ? (
+            <EmptyState text="No lectures yet — add some above" />
+          ) : (
+            <>
+              <p className="px-1 text-xs font-semibold text-muted-foreground">
+                {topic.lectures.length} lecture
+                {topic.lectures.length > 1 ? "s" : ""}
+              </p>
+              {topic.lectures.map((l) => (
+                <Card key={l.id} className="border-none p-3">
+                  <div className="flex items-center gap-3">
+                    {l.number && (
+                      <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 font-mono text-xs font-bold text-primary">
+                        {l.number}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                      {l.name || "Untitled"}
+                    </span>
+                    <ConfirmDelete
+                      title="Delete lecture?"
+                      description="This removes the lecture from this topic."
+                      onConfirm={() => {
+                        deleteLecture(courseId, topicId, l.id);
+                        toast.success("Lecture deleted");
+                      }}
+                    />
+                  </div>
+                </Card>
+              ))}
+            </>
+          )}
+        </TabsContent>
 
         <TabsContent value="files" className="space-y-3">
           {topic.files.length === 0 && <EmptyState text="No files in this topic yet" />}

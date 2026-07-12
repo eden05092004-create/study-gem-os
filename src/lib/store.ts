@@ -72,12 +72,19 @@ export type Exam = {
   questions: Question[];
 };
 
+export type Lecture = {
+  id: string;
+  number: string;
+  name: string;
+};
+
 export type Topic = {
   id: string;
   name: string;
   files: FileItem[];
   notes: Note[];
   exams: Exam[];
+  lectures: Lecture[];
 };
 
 export type Course = {
@@ -209,6 +216,16 @@ type State = {
     title: string,
     sections: NoteSection[],
   ) => Promise<void>;
+  addLectures: (
+    courseId: string,
+    topicId: string,
+    lectures: { number: string; name: string }[],
+  ) => Promise<void>;
+  deleteLecture: (
+    courseId: string,
+    topicId: string,
+    lectureId: string,
+  ) => Promise<void>;
 };
 
 function mapQuestion(q: {
@@ -256,6 +273,7 @@ async function loadAll() {
     questionsRes,
     mistakesRes,
     answersRes,
+    lecturesRes,
   ] = await Promise.all([
     supabase.from("courses").select("*").order("created_at"),
     supabase.from("topics").select("*").order("created_at"),
@@ -265,7 +283,16 @@ async function loadAll() {
     supabase.from("questions").select("*").order("position"),
     supabase.from("mistakes").select("*").order("created_at"),
     supabase.from("answers").select("id"),
+    supabase.from("lectures").select("*").order("position"),
   ]);
+
+  const lecturesByTopic = new Map<string, Lecture[]>();
+  for (const l of lecturesRes.data ?? []) {
+    const arr = lecturesByTopic.get(l.topic_id) ?? [];
+    arr.push({ id: l.id, number: l.number, name: l.name });
+    lecturesByTopic.set(l.topic_id, arr);
+  }
+
 
   const questions = questionsRes.data ?? [];
   const questionMap = new Map<string, Question>();
@@ -324,6 +351,7 @@ async function loadAll() {
       files: filesByTopic.get(t.id) ?? [],
       notes: notesByTopic.get(t.id) ?? [],
       exams: examsByTopic.get(t.id) ?? [],
+      lectures: lecturesByTopic.get(t.id) ?? [],
     });
     topicsByCourse.set(t.course_id, arr);
   }
@@ -456,7 +484,7 @@ export const useStore = create<State>((set, get) => ({
               ...c,
               topics: [
                 ...c.topics,
-                { id: data.id, name: data.name, files: [], notes: [], exams: [] },
+                { id: data.id, name: data.name, files: [], notes: [], exams: [], lectures: [] },
               ],
             }
           : c,
@@ -816,6 +844,63 @@ export const useStore = create<State>((set, get) => ({
                         n.id === noteId ? { ...n, title, sections, updatedAt } : n,
                       ),
                     }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
+
+  addLectures: async (courseId, topicId, lectures) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (!user || lectures.length === 0) return;
+    const s = get();
+    const existing =
+      s.courses.find((c) => c.id === courseId)?.topics.find((t) => t.id === topicId)
+        ?.lectures.length ?? 0;
+    const rows = lectures.map((l, i) => ({
+      user_id: user.id,
+      course_id: courseId,
+      topic_id: topicId,
+      number: l.number,
+      name: l.name,
+      position: existing + i,
+    }));
+    const { data } = await supabase.from("lectures").insert(rows).select();
+    if (!data) return;
+    const added: Lecture[] = data.map((l) => ({
+      id: l.id,
+      number: l.number,
+      name: l.name,
+    }));
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, lectures: [...t.lectures, ...added] }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
+
+  deleteLecture: async (courseId, topicId, lectureId) => {
+    await supabase.from("lectures").delete().eq("id", lectureId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, lectures: t.lectures.filter((l) => l.id !== lectureId) }
                   : t,
               ),
             }
