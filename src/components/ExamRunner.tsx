@@ -70,6 +70,24 @@ function parseCloze(text: string): { type: "text" | "blank"; value: string }[] {
   return parts;
 }
 
+/** an image with numbered markers overlaid at normalized coordinates */
+function ImageBlock({ url, labels }: { url: string; labels?: ImageLabel[] }) {
+  return (
+    <div className="relative mb-4 overflow-hidden rounded-xl border border-border bg-muted">
+      <img src={url} alt="Question figure" className="w-full object-contain" />
+      {labels?.map((l) => (
+        <span
+          key={l.id}
+          className="absolute grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground ring-2 ring-background"
+          style={{ left: `${l.x * 100}%`, top: `${l.y * 100}%` }}
+        >
+          {l.id}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function QuestionBody({
   q,
   answers,
