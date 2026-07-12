@@ -171,7 +171,6 @@ export function ExamRunner({
           </button>
         </div>
         <RadioGroup
-          dir="rtl"
           value={answers[q.id]?.toString() ?? ""}
           onValueChange={(v) => setAnswers((a) => ({ ...a, [q.id]: Number(v) }))}
           className="space-y-2"
