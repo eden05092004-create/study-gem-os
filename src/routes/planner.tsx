@@ -24,7 +24,7 @@ export const Route = createFileRoute("/planner")({
   component: Planner,
 });
 
-const WEEKDAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REVIEW_GAP_DAYS = 3;
 
 type PlanItem = {
