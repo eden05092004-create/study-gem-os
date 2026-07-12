@@ -351,6 +351,7 @@ export const useStore = create<State>((set, get) => ({
     const loaded = await loadAll();
     set({
       userName: profile?.display_name ?? user.email?.split("@")[0] ?? "Student",
+      userEmail: user.email ?? "",
       ...loaded,
       loading: false,
       initialized: true,
