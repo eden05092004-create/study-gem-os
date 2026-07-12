@@ -136,7 +136,7 @@ function TopicDetail() {
         </TabsContent>
 
         <TabsContent value="exams" className="space-y-3">
-          {topic.exams.length === 0 && <EmptyState text="אין מבחנים בנושא הזה" />}
+          {topic.exams.length === 0 && <EmptyState text="No exams in this topic" />}
           {topic.exams.map((e) => (
             <Card key={e.id} className="border-none p-4">
               <div className="mb-3 flex items-center gap-3">
@@ -144,7 +144,7 @@ function TopicDetail() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-foreground">{e.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {e.questions.length} שאלות · {e.durationMin} דק'
+                    {e.questions.length} questions · {e.durationMin} min
                   </div>
                 </div>
               </div>
@@ -157,29 +157,29 @@ function TopicDetail() {
                   })
                 }
               >
-                <Play className="h-4 w-4" /> התחל מבחן
+                <Play className="h-4 w-4" /> Start exam
               </Button>
             </Card>
           ))}
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() => toast("בקרוב: יצירת מבחן אוטומטי מהחומר ✨")}
+            onClick={() => toast("Coming soon: auto-generate an exam from your material ✨")}
           >
-            <Sparkles className="h-4 w-4" /> צור מבחן (AI)
+            <Sparkles className="h-4 w-4" /> Generate exam (AI)
           </Button>
         </TabsContent>
 
         <TabsContent value="cards">
           <div className="py-10 text-center">
             <Layers className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">כרטיסיות זיכרון יגיעו בקרוב</p>
+            <p className="text-sm text-muted-foreground">Flashcards are coming soon</p>
             <Button
               variant="outline"
               className="mt-4 rounded-full"
-              onClick={() => toast("בקרוב: יצירת כרטיסיות מהסיכום ✨")}
+              onClick={() => toast("Coming soon: generate flashcards from your notes ✨")}
             >
-              <Sparkles className="h-4 w-4" /> צור כרטיסיות (AI)
+              <Sparkles className="h-4 w-4" /> Generate flashcards (AI)
             </Button>
           </div>
         </TabsContent>
