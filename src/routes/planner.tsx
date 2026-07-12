@@ -381,7 +381,7 @@ function Planner() {
                   className={`border-none p-4 ${allDone ? "opacity-70" : ""}`}
                 >
                   <h3 className="mb-3 text-sm font-bold text-foreground">
-                    {formatHebDate(day.date)}
+                    {formatPlanDate(day.date)}
                   </h3>
                   <div className="space-y-2">
                     {day.items.map((it) => (
