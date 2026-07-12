@@ -23,12 +23,26 @@ export type Note = {
   sections: NoteSection[];
 };
 
+export type QuestionType = "mcq" | "cloze" | "matching" | "truefalse" | "short";
+
+/** A single gradable unit inside a question (worth 1 point) */
+export type Blank = {
+  id: string;
+  /** label shown before the dropdown (matching item / true-false statement) */
+  label?: string;
+  /** dropdown options; empty for short answer */
+  options: string[];
+  /** correct option value, or the accepted answer for short answer */
+  correct: string;
+};
+
 export type Question = {
   id: string;
+  type: QuestionType;
+  /** prompt; for cloze this is the passage containing [[id]] tokens */
   text: string;
-  options: string[];
-  correctIndex: number;
-  /** explanation per option (why right / why wrong) */
+  blanks: Blank[];
+  /** per-option explanation, only used for mcq review */
   explanations: string[];
 };
 
@@ -62,15 +76,63 @@ export type MistakeEntry = {
   topicId: string;
   examId: string;
   question: Question;
-  chosenIndex: number;
+  blankId: string;
+  blankLabel: string;
+  questionText: string;
+  chosenValue: string;
+  correctValue: string;
   date: string;
 };
+
+/* ---------- grading helpers ---------- */
+
+export function normalizeShort(s: string) {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function isBlankCorrect(
+  blank: Blank,
+  value: string | undefined,
+  type: QuestionType,
+) {
+  if (value === undefined || value === "") return false;
+  if (type === "short") return normalizeShort(value) === normalizeShort(blank.correct);
+  return value === blank.correct;
+}
+
+export type QuestionGrade = {
+  total: number;
+  earned: number;
+  perBlank: { blank: Blank; value: string | undefined; correct: boolean }[];
+  status: "correct" | "partial" | "incorrect";
+};
+
+export function gradeQuestion(
+  q: Question,
+  answers: Record<string, string>,
+): QuestionGrade {
+  const perBlank = q.blanks.map((blank) => {
+    const value = answers[`${q.id}:${blank.id}`];
+    return { blank, value, correct: isBlankCorrect(blank, value, q.type) };
+  });
+  const earned = perBlank.filter((b) => b.correct).length;
+  const total = q.blanks.length || 1;
+  const status: QuestionGrade["status"] =
+    earned === total ? "correct" : earned === 0 ? "incorrect" : "partial";
+  return { total, earned, perBlank, status };
+}
 
 const EMOJIS = ["📘", "📗", "📙", "📕", "🧪", "💊", "🦴", "❤️"];
 const COLORS = ["190", "60", "155", "22"];
 
 /* ---------- store ---------- */
 
+export type NewQuestion = {
+  type: QuestionType;
+  text: string;
+  blanks: Blank[];
+  explanations?: string[];
+};
 
 type State = {
   userName: string;
@@ -90,16 +152,54 @@ type State = {
     topicId: string,
     file: Omit<FileItem, "id">,
   ) => Promise<void>;
+  createExam: (
+    courseId: string,
+    topicId: string,
+    title: string,
+    durationMin: number,
+    questions: NewQuestion[],
+  ) => Promise<void>;
   recordExamResult: (
     courseId: string,
     topicId: string,
     examId: string,
-    answers: Record<string, number>,
+    answers: Record<string, string>,
   ) => Promise<void>;
   clearMistakes: () => Promise<void>;
 };
 
-async function loadAll(userId: string) {
+function mapQuestion(q: {
+  id: string;
+  type: string | null;
+  text: string;
+  options: unknown;
+  correct_index: number | null;
+  blanks: unknown;
+  explanations: unknown;
+}): Question {
+  const type = (q.type as QuestionType) ?? "mcq";
+  let blanks = (q.blanks as Blank[]) ?? [];
+  if (!blanks || blanks.length === 0) {
+    // legacy mcq without blanks — synthesize a single blank
+    const opts = (q.options as string[]) ?? [];
+    blanks = [
+      {
+        id: "b1",
+        options: opts,
+        correct: opts[q.correct_index ?? 0] ?? "",
+      },
+    ];
+  }
+  return {
+    id: q.id,
+    type,
+    text: q.text,
+    blanks,
+    explanations: (q.explanations as string[]) ?? [],
+  };
+}
+
+async function loadAll() {
   const [
     coursesRes,
     topicsRes,
@@ -124,13 +224,7 @@ async function loadAll(userId: string) {
   const questionMap = new Map<string, Question>();
   const questionsByExam = new Map<string, Question[]>();
   for (const q of questions) {
-    const question: Question = {
-      id: q.id,
-      text: q.text,
-      options: (q.options as string[]) ?? [],
-      correctIndex: q.correct_index,
-      explanations: (q.explanations as string[]) ?? [],
-    };
+    const question = mapQuestion(q);
     questionMap.set(q.id, question);
     const arr = questionsByExam.get(q.exam_id) ?? [];
     arr.push(question);
@@ -206,7 +300,11 @@ async function loadAll(userId: string) {
       topicId: m.topic_id,
       examId: m.exam_id,
       question: questionMap.get(m.question_id)!,
-      chosenIndex: m.chosen_index,
+      blankId: m.blank_id ?? "",
+      blankLabel: m.blank_label ?? "",
+      questionText: m.question_text ?? questionMap.get(m.question_id)!.text,
+      chosenValue: m.chosen_value ?? "",
+      correctValue: m.correct_value ?? "",
       date: "Today",
     }));
 
@@ -242,7 +340,7 @@ export const useStore = create<State>((set, get) => ({
       .eq("id", user.id)
       .maybeSingle();
 
-    const loaded = await loadAll(user.id);
+    const loaded = await loadAll();
     set({
       userName: profile?.display_name ?? user.email?.split("@")[0] ?? "Student",
       ...loaded,
@@ -361,6 +459,50 @@ export const useStore = create<State>((set, get) => ({
     }));
   },
 
+  createExam: async (courseId, topicId, title, durationMin, questions) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (!user) return;
+
+    const { data: examRow } = await supabase
+      .from("exams")
+      .insert({
+        user_id: user.id,
+        topic_id: topicId,
+        title,
+        duration_min: durationMin,
+      })
+      .select()
+      .single();
+    if (!examRow) return;
+
+    const rows = questions.map((q, i) => {
+      // keep legacy mcq columns populated for compatibility
+      const isMcq = q.type === "mcq";
+      const opts = isMcq ? q.blanks[0]?.options ?? [] : [];
+      const correctIndex = isMcq
+        ? Math.max(0, opts.indexOf(q.blanks[0]?.correct ?? ""))
+        : null;
+      return {
+        user_id: user.id,
+        exam_id: examRow.id,
+        type: q.type,
+        text: q.text,
+        blanks: q.blanks,
+        options: opts,
+        correct_index: correctIndex,
+        explanations: q.explanations ?? [],
+        position: i,
+      };
+    });
+    if (rows.length) {
+      await supabase.from("questions").insert(rows);
+    }
+
+    const loaded = await loadAll();
+    set({ courses: loaded.courses });
+  },
+
   recordExamResult: async (courseId, topicId, examId, answers) => {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
@@ -375,7 +517,8 @@ export const useStore = create<State>((set, get) => ({
       user_id: string;
       question_id: string;
       exam_id: string;
-      chosen_index: number;
+      blank_id: string;
+      chosen_value: string;
       is_correct: boolean;
     }[] = [];
     const mistakeRows: {
@@ -384,29 +527,40 @@ export const useStore = create<State>((set, get) => ({
       topic_id: string;
       exam_id: string;
       question_id: string;
-      chosen_index: number;
+      blank_id: string;
+      blank_label: string;
+      question_text: string;
+      chosen_value: string;
+      correct_value: string;
     }[] = [];
 
     for (const q of exam.questions) {
-      const chosen = answers[q.id];
-      if (chosen === undefined) continue;
-      const isCorrect = chosen === q.correctIndex;
-      answerRows.push({
-        user_id: user.id,
-        question_id: q.id,
-        exam_id: examId,
-        chosen_index: chosen,
-        is_correct: isCorrect,
-      });
-      if (!isCorrect) {
-        mistakeRows.push({
+      for (const blank of q.blanks) {
+        const value = answers[`${q.id}:${blank.id}`];
+        if (value === undefined) continue;
+        const correct = isBlankCorrect(blank, value, q.type);
+        answerRows.push({
           user_id: user.id,
-          course_id: courseId,
-          topic_id: topicId,
-          exam_id: examId,
           question_id: q.id,
-          chosen_index: chosen,
+          exam_id: examId,
+          blank_id: blank.id,
+          chosen_value: value,
+          is_correct: correct,
         });
+        if (!correct) {
+          mistakeRows.push({
+            user_id: user.id,
+            course_id: courseId,
+            topic_id: topicId,
+            exam_id: examId,
+            question_id: q.id,
+            blank_id: blank.id,
+            blank_label: blank.label ?? "",
+            question_text: q.text,
+            chosen_value: value,
+            correct_value: blank.correct,
+          });
+        }
       }
     }
 
@@ -416,11 +570,15 @@ export const useStore = create<State>((set, get) => ({
     if (mistakeRows.length) {
       await supabase
         .from("mistakes")
-        .upsert(mistakeRows, { onConflict: "user_id,question_id" });
+        .upsert(mistakeRows, { onConflict: "user_id,question_id,blank_id" });
     }
 
-    const loaded = await loadAll(user.id);
-    set({ courses: loaded.courses, mistakes: loaded.mistakes, questionsSolved: loaded.questionsSolved });
+    const loaded = await loadAll();
+    set({
+      courses: loaded.courses,
+      mistakes: loaded.mistakes,
+      questionsSolved: loaded.questionsSolved,
+    });
   },
 
   clearMistakes: async () => {
