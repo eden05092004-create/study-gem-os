@@ -58,7 +58,7 @@ export function ExamRunner({
     return (
       <div className="pt-2">
         <Card className="soft-shadow mb-5 border-none p-6 text-center">
-          <p className="text-sm text-muted-foreground">התוצאה שלך</p>
+          <p className="text-sm text-muted-foreground">Your score</p>
           <div className="my-2 text-5xl font-extrabold text-primary">{result.pct}%</div>
           <p className="text-sm text-muted-foreground">{title}</p>
         </Card>
@@ -66,25 +66,25 @@ export function ExamRunner({
           <Card className="border-none bg-success/10 p-4 text-center">
             <CheckCircle2 className="mx-auto mb-1 h-5 w-5 text-success" />
             <div className="text-xl font-bold text-foreground">{result.correct}</div>
-            <div className="text-[11px] text-muted-foreground">נכונות</div>
+            <div className="text-[11px] text-muted-foreground">Correct</div>
           </Card>
           <Card className="border-none bg-destructive/10 p-4 text-center">
             <XCircle className="mx-auto mb-1 h-5 w-5 text-destructive" />
             <div className="text-xl font-bold text-foreground">{result.wrong}</div>
-            <div className="text-[11px] text-muted-foreground">שגויות</div>
+            <div className="text-[11px] text-muted-foreground">Wrong</div>
           </Card>
           <Card className="border-none bg-muted p-4 text-center">
             <MinusCircle className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
             <div className="text-xl font-bold text-foreground">{result.skipped}</div>
-            <div className="text-[11px] text-muted-foreground">דילוגים</div>
+            <div className="text-[11px] text-muted-foreground">Skipped</div>
           </Card>
         </div>
         <div className="space-y-3">
           <Button className="w-full rounded-full" onClick={() => setPhase("review")}>
-            סקירת תשובות
+            Review answers
           </Button>
           <Button asChild variant="outline" className="w-full rounded-full">
-            <Link to="/exams">חזרה למבחנים</Link>
+            <Link to="/exams">Back to exams</Link>
           </Button>
         </div>
       </div>
@@ -134,7 +134,7 @@ export function ExamRunner({
           );
         })}
         <Button asChild className="w-full rounded-full">
-          <Link to="/exams">סיום</Link>
+          <Link to="/exams">Finish</Link>
         </Button>
       </div>
     );
@@ -146,7 +146,7 @@ export function ExamRunner({
     <div className="pt-1">
       <div className="mb-4 flex items-center justify-between">
         <span className="text-sm font-semibold text-foreground">
-          שאלה {current + 1} מתוך {questions.length}
+          Question {current + 1} of {questions.length}
         </span>
         <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
           <Timer className="h-4 w-4" /> {String(Math.floor((current + 1) * 0.5)).padStart(2, "0")}:00
@@ -165,13 +165,12 @@ export function ExamRunner({
                 ? "bg-warning/20 text-warning-foreground"
                 : "bg-muted text-muted-foreground",
             )}
-            aria-label="סמן שאלה"
+            aria-label="Flag question"
           >
             <Flag className="h-4 w-4" />
           </button>
         </div>
         <RadioGroup
-          dir="rtl"
           value={answers[q.id]?.toString() ?? ""}
           onValueChange={(v) => setAnswers((a) => ({ ...a, [q.id]: Number(v) }))}
           className="space-y-2"
@@ -201,24 +200,24 @@ export function ExamRunner({
           disabled={current === 0}
           onClick={() => setCurrent((c) => c - 1)}
         >
-          <ChevronRight className="h-4 w-4" /> הקודם
+          <ChevronLeft className="h-4 w-4" /> Previous
         </Button>
         {current < questions.length - 1 ? (
           <Button
             className="flex-1 rounded-full"
             onClick={() => setCurrent((c) => c + 1)}
           >
-            הבא <ChevronLeft className="h-4 w-4" />
+            Next <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
           <Button className="flex-1 rounded-full" onClick={submit}>
-            הגש מבחן
+            Submit exam
           </Button>
         )}
       </div>
       {current === questions.length - 1 && (
         <p className="mt-3 flex items-center justify-center gap-1 text-xs text-muted-foreground">
-          <RotateCcw className="h-3 w-3" /> ניתן לחזור אחורה ולערוך תשובות לפני ההגשה
+          <RotateCcw className="h-3 w-3" /> You can go back and edit answers before submitting
         </p>
       )}
     </div>

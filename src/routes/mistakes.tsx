@@ -28,9 +28,9 @@ function Mistakes() {
   if (retry) {
     return (
       <AppShell>
-        <h1 className="mb-4 text-xl font-extrabold text-foreground">תרגול טעויות</h1>
+        <h1 className="mb-4 text-xl font-extrabold text-foreground">Practice mistakes</h1>
         <ExamRunner
-          title="תרגול טעויות"
+          title="Practice mistakes"
           questions={mistakes.map((m) => m.question)}
         />
       </AppShell>
@@ -39,14 +39,14 @@ function Mistakes() {
 
   return (
     <AppShell>
-      <PageTitle title="מחברת טעויות" subtitle="כל השאלות שטעיתם בהן, במקום אחד" />
+      <PageTitle title="Mistake notebook" subtitle="All the questions you got wrong, in one place" />
 
       {mistakes.length === 0 ? (
         <Card className="border-none p-8 text-center">
           <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-success" />
-          <p className="font-semibold text-foreground">אין טעויות עדיין 🎉</p>
+          <p className="font-semibold text-foreground">No mistakes yet 🎉</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            פתרו מבחן — שאלות שגויות יופיעו כאן לחזרה ממוקדת.
+            Take an exam — wrong answers will show up here for focused review.
           </p>
         </Card>
       ) : (
@@ -55,14 +55,14 @@ function Mistakes() {
             className="mb-5 w-full rounded-full"
             onClick={() => setRetry(true)}
           >
-            <RotateCcw className="h-4 w-4" /> תרגל רק את הטעויות ({mistakes.length})
+            <RotateCcw className="h-4 w-4" /> Retry mistakes only ({mistakes.length})
           </Button>
 
           <div className="space-y-5">
             {grouped.map(([courseName, items]) => (
               <div key={courseName}>
                 <h2 className="mb-2 text-sm font-bold text-muted-foreground">
-                  {courseName} · {items.length} טעויות
+                  {courseName} · {items.length} mistakes
                 </h2>
                 <div className="space-y-3">
                   {items.map((m) => (
@@ -73,14 +73,14 @@ function Mistakes() {
                           {m.question.text}
                         </p>
                       </div>
-                      <div className="space-y-1.5 pr-6 text-xs">
+                      <div className="space-y-1.5 pl-6 text-xs">
                         <div className="flex items-center gap-1.5 text-destructive">
                           <XCircle className="h-3.5 w-3.5 shrink-0" />
-                          התשובה שלך: {m.question.options[m.chosenIndex]}
+                          Your answer: {m.question.options[m.chosenIndex]}
                         </div>
                         <div className="flex items-center gap-1.5 text-success">
                           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                          הנכונה: {m.question.options[m.question.correctIndex]}
+                          Correct: {m.question.options[m.question.correctIndex]}
                         </div>
                       </div>
                     </Card>

@@ -78,17 +78,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StudyOS — פלטפורמת הלימודים לרפואה" },
+      { title: "StudyOS — Medical Study Platform" },
       {
         name: "description",
         content:
-          "StudyOS — נהלו קורסים, סיכומים, מבחנים ומחברת טעויות במקום אחד. פלטפורמת לימודים חכמה לסטודנטים לרפואה.",
+          "StudyOS — manage courses, notes, exams and a mistake notebook in one place. A smart study platform for medical students.",
       },
       { name: "author", content: "StudyOS" },
-      { property: "og:title", content: "StudyOS — פלטפורמת הלימודים לרפואה" },
+      { property: "og:title", content: "StudyOS — Medical Study Platform" },
       {
         property: "og:description",
-        content: "קורסים, סיכומים, מבחנים ומחברת טעויות — הכל במקום אחד.",
+        content: "Courses, notes, exams and a mistake notebook — all in one place.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -119,7 +119,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="en" dir="ltr">
       <head>
         <HeadContent />
       </head>
@@ -138,7 +138,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <Toaster position="top-center" richColors dir="rtl" />
+      <Toaster position="top-center" richColors dir="ltr" />
     </QueryClientProvider>
 
   );

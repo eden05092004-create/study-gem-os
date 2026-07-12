@@ -24,7 +24,7 @@ export const Route = createFileRoute("/planner")({
   component: Planner,
 });
 
-const WEEKDAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REVIEW_GAP_DAYS = 3;
 
 type PlanItem = {
@@ -54,9 +54,9 @@ function parseKey(k: string) {
   return new Date(y, m - 1, d);
 }
 
-function formatHebDate(k: string) {
+function formatPlanDate(k: string) {
   const d = parseKey(k);
-  return `יום ${WEEKDAYS[d.getDay()]} · ${d.getDate()}/${d.getMonth() + 1}`;
+  return `${WEEKDAYS[d.getDay()]} · ${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function generatePlan(
@@ -198,23 +198,23 @@ function Planner() {
 
   const handleGenerate = async () => {
     if (!examDate) {
-      toast.error("בחרו תאריך מבחן");
+      toast.error("Choose an exam date");
       return;
     }
     if (selectedTopics.length === 0) {
-      toast.error("בחרו לפחות נושא אחד");
+      toast.error("Select at least one topic");
       return;
     }
     const chosen = topicOptions.filter((t) => selectedTopics.includes(t.id));
     const generated = generatePlan(examDate, chosen, weeklyHours);
     if (generated.length === 0) {
-      toast.error("אין ימי לימוד זמינים עד תאריך המבחן — עדכנו שעות/תאריך");
+      toast.error("No study days available before the exam — update your hours or date");
       return;
     }
     setDays(generated);
     setShowForm(false);
     await persist(generated);
-    toast.success("נבנתה תוכנית לימודים 🎉");
+    toast.success("Study plan created 🎉");
   };
 
   const toggleItem = async (dayDate: string, itemId: string) => {
@@ -251,8 +251,8 @@ function Planner() {
   return (
     <AppShell>
       <PageTitle
-        title="תכנון לימודים"
-        subtitle="בנו לוח זמנים חכם עד למבחן, עם חזרות אוטומטיות"
+        title="Study planner"
+        subtitle="Build a smart schedule until your exam, with automatic reviews"
       />
 
       {loading ? null : showForm ? (
@@ -260,7 +260,7 @@ function Planner() {
           {/* exam date */}
           <Card className="border-none p-4">
             <Label className="mb-2 flex items-center gap-2 text-sm font-bold">
-              <CalendarRange className="h-4 w-4 text-primary" /> תאריך המבחן
+              <CalendarRange className="h-4 w-4 text-primary" /> Exam date
             </Label>
             <Input
               type="date"
@@ -273,11 +273,11 @@ function Planner() {
           {/* topics */}
           <Card className="border-none p-4">
             <Label className="mb-3 flex items-center gap-2 text-sm font-bold">
-              <BookOpen className="h-4 w-4 text-primary" /> נושאים ללימוד
+              <BookOpen className="h-4 w-4 text-primary" /> Topics to cover
             </Label>
             {topicOptions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                אין נושאים עדיין — צרו קורסים ונושאים תחילה.
+                No topics yet — create courses and topics first.
               </p>
             ) : (
               <div className="space-y-3">
@@ -311,12 +311,12 @@ function Planner() {
           {/* weekly hours */}
           <Card className="border-none p-4">
             <Label className="mb-3 block text-sm font-bold">
-              שעות לימוד זמינות בכל יום בשבוע
+              Available study hours for each day of the week
             </Label>
             <div className="space-y-2">
               {WEEKDAYS.map((name, idx) => (
                 <div key={idx} className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-foreground">יום {name}</span>
+                  <span className="text-sm text-foreground">{name}</span>
                   <Input
                     type="number"
                     min={0}
@@ -337,7 +337,7 @@ function Planner() {
           </Card>
 
           <Button className="w-full rounded-full" onClick={handleGenerate}>
-            <Sparkles className="h-4 w-4" /> בנה תוכנית לימודים
+            <Sparkles className="h-4 w-4" /> Generate study plan
           </Button>
         </div>
       ) : (
@@ -346,7 +346,7 @@ function Planner() {
           <Card className="border-none p-4">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">
-                התקדמות — {doneItems}/{totalItems}
+                Progress — {doneItems}/{totalItems}
               </p>
               <span className="text-sm font-bold text-primary">{progress}%</span>
             </div>
@@ -358,7 +358,7 @@ function Planner() {
                 className="flex-1 rounded-full"
                 onClick={() => setShowForm(true)}
               >
-                <RefreshCw className="h-4 w-4" /> ערוך
+                <RefreshCw className="h-4 w-4" /> Edit
               </Button>
               <Button
                 variant="outline"
@@ -366,7 +366,7 @@ function Planner() {
                 className="flex-1 rounded-full text-destructive"
                 onClick={handleReset}
               >
-                <Trash2 className="h-4 w-4" /> אפס
+                <Trash2 className="h-4 w-4" /> Reset
               </Button>
             </div>
           </Card>
@@ -381,14 +381,14 @@ function Planner() {
                   className={`border-none p-4 ${allDone ? "opacity-70" : ""}`}
                 >
                   <h3 className="mb-3 text-sm font-bold text-foreground">
-                    {formatHebDate(day.date)}
+                    {formatPlanDate(day.date)}
                   </h3>
                   <div className="space-y-2">
                     {day.items.map((it) => (
                       <button
                         key={it.id}
                         onClick={() => toggleItem(day.date, it.id)}
-                        className="flex w-full items-center gap-3 rounded-xl bg-muted/40 px-3 py-2.5 text-right"
+                        className="flex w-full items-center gap-3 rounded-xl bg-muted/40 px-3 py-2.5 text-left"
                       >
                         {it.done ? (
                           <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
@@ -406,8 +406,8 @@ function Planner() {
                             {it.topicName}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {it.type === "review" ? "🔁 חזרה" : "📖 לימוד"} ·{" "}
-                            {it.minutes} דק׳
+                            {it.type === "review" ? "🔁 Review" : "📖 Study"} ·{" "}
+                            {it.minutes} min
                           </span>
                         </span>
                       </button>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ExamRunner } from "@/components/ExamRunner";
 import { useStore } from "@/lib/store";
@@ -18,7 +18,7 @@ function ExamPage() {
   if (!exam) {
     return (
       <AppShell>
-        <p className="py-10 text-center text-sm text-muted-foreground">המבחן לא נמצא</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">Exam not found</p>
       </AppShell>
     );
   }
@@ -29,7 +29,7 @@ function ExamPage() {
         to="/exams"
         className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground"
       >
-        <ChevronRight className="h-4 w-4" /> מבחנים
+        <ChevronLeft className="h-4 w-4" /> Exams
       </Link>
       <h1 className="mb-4 text-xl font-extrabold text-foreground">{exam.title}</h1>
       <ExamRunner

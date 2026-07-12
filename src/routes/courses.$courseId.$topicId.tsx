@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
-  ChevronRight,
+  ChevronLeft,
   FileText,
   FileImage,
   Presentation,
@@ -45,7 +45,7 @@ function TopicDetail() {
   if (!course || !topic) {
     return (
       <AppShell>
-        <EmptyState text="הנושא לא נמצא" />
+        <EmptyState text="Topic not found" />
       </AppShell>
     );
   }
@@ -56,30 +56,30 @@ function TopicDetail() {
         to="/courses"
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground"
       >
-        <ChevronRight className="h-4 w-4" /> {course.name}
+        <ChevronLeft className="h-4 w-4" /> {course.name}
       </Link>
       <h1 className="mb-4 flex items-center gap-2 text-2xl font-extrabold text-foreground">
         <span className="text-2xl">{course.emoji}</span> {topic.name}
       </h1>
 
-      <Tabs defaultValue="files" dir="rtl">
+      <Tabs defaultValue="files">
         <TabsList className="mb-4 grid w-full grid-cols-4 rounded-full">
           <TabsTrigger value="files" className="rounded-full text-xs">
-            <FileText className="ml-1 h-3.5 w-3.5" /> קבצים
+            <FileText className="mr-1 h-3.5 w-3.5" /> Files
           </TabsTrigger>
           <TabsTrigger value="notes" className="rounded-full text-xs">
-            <NotebookPen className="ml-1 h-3.5 w-3.5" /> סיכומים
+            <NotebookPen className="mr-1 h-3.5 w-3.5" /> Notes
           </TabsTrigger>
           <TabsTrigger value="exams" className="rounded-full text-xs">
-            <ClipboardList className="ml-1 h-3.5 w-3.5" /> מבחנים
+            <ClipboardList className="mr-1 h-3.5 w-3.5" /> Exams
           </TabsTrigger>
           <TabsTrigger value="cards" className="rounded-full text-xs">
-            <Layers className="ml-1 h-3.5 w-3.5" /> כרטיסיות
+            <Layers className="mr-1 h-3.5 w-3.5" /> Flashcards
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="files" className="space-y-3">
-          {topic.files.length === 0 && <EmptyState text="עדיין אין קבצים בנושא הזה" />}
+          {topic.files.length === 0 && <EmptyState text="No files in this topic yet" />}
           {topic.files.map((f) => {
             const Icon = kindIcon[f.kind];
             return (
@@ -92,7 +92,7 @@ function TopicDetail() {
                     {f.name}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {f.size} · נוסף {f.addedAt}
+                    {f.size} · added {f.addedAt}
                   </div>
                 </div>
               </Card>
@@ -100,14 +100,14 @@ function TopicDetail() {
           })}
           <Button asChild variant="outline" className="w-full rounded-full">
             <Link to="/upload">
-              <UploadIcon className="h-4 w-4" /> העלה קובץ לנושא
+              <UploadIcon className="h-4 w-4" /> Upload a file to this topic
             </Link>
           </Button>
         </TabsContent>
 
         <TabsContent value="notes" className="space-y-3">
           {topic.notes.length === 0 && (
-            <EmptyState text="אין סיכומים עדיין — צרו אחד מקובץ" />
+            <EmptyState text="No notes yet — generate one from a file" />
           )}
           {topic.notes.map((n) => (
             <Link
@@ -120,7 +120,7 @@ function TopicDetail() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-foreground">{n.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {n.sections.length} מקטעים · עודכן {n.updatedAt}
+                    {n.sections.length} sections · updated {n.updatedAt}
                   </div>
                 </div>
               </Card>
@@ -129,14 +129,14 @@ function TopicDetail() {
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() => toast("בקרוב: יצירת סיכום אוטומטי מקובץ ✨")}
+            onClick={() => toast("Coming soon: auto-generate notes from a file ✨")}
           >
-            <Sparkles className="h-4 w-4" /> צור סיכום (AI)
+            <Sparkles className="h-4 w-4" /> Generate notes (AI)
           </Button>
         </TabsContent>
 
         <TabsContent value="exams" className="space-y-3">
-          {topic.exams.length === 0 && <EmptyState text="אין מבחנים בנושא הזה" />}
+          {topic.exams.length === 0 && <EmptyState text="No exams in this topic" />}
           {topic.exams.map((e) => (
             <Card key={e.id} className="border-none p-4">
               <div className="mb-3 flex items-center gap-3">
@@ -144,7 +144,7 @@ function TopicDetail() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-foreground">{e.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {e.questions.length} שאלות · {e.durationMin} דק'
+                    {e.questions.length} questions · {e.durationMin} min
                   </div>
                 </div>
               </div>
@@ -157,29 +157,29 @@ function TopicDetail() {
                   })
                 }
               >
-                <Play className="h-4 w-4" /> התחל מבחן
+                <Play className="h-4 w-4" /> Start exam
               </Button>
             </Card>
           ))}
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() => toast("בקרוב: יצירת מבחן אוטומטי מהחומר ✨")}
+            onClick={() => toast("Coming soon: auto-generate an exam from your material ✨")}
           >
-            <Sparkles className="h-4 w-4" /> צור מבחן (AI)
+            <Sparkles className="h-4 w-4" /> Generate exam (AI)
           </Button>
         </TabsContent>
 
         <TabsContent value="cards">
           <div className="py-10 text-center">
             <Layers className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">כרטיסיות זיכרון יגיעו בקרוב</p>
+            <p className="text-sm text-muted-foreground">Flashcards are coming soon</p>
             <Button
               variant="outline"
               className="mt-4 rounded-full"
-              onClick={() => toast("בקרוב: יצירת כרטיסיות מהסיכום ✨")}
+              onClick={() => toast("Coming soon: generate flashcards from your notes ✨")}
             >
-              <Sparkles className="h-4 w-4" /> צור כרטיסיות (AI)
+              <Sparkles className="h-4 w-4" /> Generate flashcards (AI)
             </Button>
           </div>
         </TabsContent>

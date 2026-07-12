@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ function NoteViewer() {
   if (!note || !course || !topic) {
     return (
       <AppShell>
-        <p className="py-10 text-center text-sm text-muted-foreground">הסיכום לא נמצא</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">Note not found</p>
       </AppShell>
     );
   }
@@ -34,12 +34,12 @@ function NoteViewer() {
         params={{ courseId, topicId }}
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground"
       >
-        <ChevronRight className="h-4 w-4" /> {topic.name}
+        <ChevronLeft className="h-4 w-4" /> {topic.name}
       </Link>
       <h1 className="mb-1 text-2xl font-extrabold leading-tight text-foreground">
         {note.title}
       </h1>
-      <p className="mb-5 text-sm text-muted-foreground">עודכן {note.updatedAt}</p>
+      <p className="mb-5 text-sm text-muted-foreground">Updated {note.updatedAt}</p>
 
       <div className="space-y-3">
         {note.sections.map((sec) => {
@@ -50,7 +50,7 @@ function NoteViewer() {
                 onClick={() =>
                   setOpenKeys((k) => ({ ...k, [sec.key]: !k[sec.key] }))
                 }
-                className="flex w-full items-center gap-3 p-4 text-right"
+                className="flex w-full items-center gap-3 p-4 text-left"
               >
                 <span className="text-xl">{sec.icon}</span>
                 <span className="min-w-0 flex-1 font-bold text-foreground">

@@ -45,7 +45,7 @@ function UploadPage() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files || !courseId || !topicId) {
-      if (!topicId) toast("בחרו קורס ונושא לפני ההעלאה");
+      if (!topicId) toast("Select a course and topic before uploading");
       return;
     }
     const names: string[] = [];
@@ -54,17 +54,17 @@ function UploadPage() {
         name: f.name,
         kind: detectKind(f.name),
         size: `${(f.size / 1024 / 1024).toFixed(1)}MB`,
-        addedAt: "עכשיו",
+        addedAt: "just now",
       });
       names.push(f.name);
     });
     setUploaded((u) => [...names, ...u]);
-    toast.success(`${names.length} קבצים הועלו בהצלחה`);
+    toast.success(`${names.length} file(s) uploaded successfully`);
   };
 
   return (
     <AppShell>
-      <PageTitle title="העלאת חומרים" subtitle="PDF · PowerPoint · Word · תמונות" />
+      <PageTitle title="Upload materials" subtitle="PDF · PowerPoint · Word · Images" />
 
       <div className="mb-4 grid grid-cols-2 gap-3">
         <Select
@@ -75,10 +75,10 @@ function UploadPage() {
             setTopicId(c?.topics[0]?.id ?? "");
           }}
         >
-          <SelectTrigger className="rounded-xl" dir="rtl">
-            <SelectValue placeholder="בחר קורס" />
+          <SelectTrigger className="rounded-xl">
+            <SelectValue placeholder="Select course" />
           </SelectTrigger>
-          <SelectContent dir="rtl">
+          <SelectContent>
             {courses.map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.emoji} {c.name}
@@ -88,10 +88,10 @@ function UploadPage() {
         </Select>
 
         <Select value={topicId} onValueChange={setTopicId}>
-          <SelectTrigger className="rounded-xl" dir="rtl">
-            <SelectValue placeholder="בחר נושא" />
+          <SelectTrigger className="rounded-xl">
+            <SelectValue placeholder="Select topic" />
           </SelectTrigger>
-          <SelectContent dir="rtl">
+          <SelectContent>
             {selectedCourse?.topics.map((t) => (
               <SelectItem key={t.id} value={t.id}>
                 {t.name}
@@ -123,8 +123,8 @@ function UploadPage() {
         <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
           <UploadCloud className="h-7 w-7" />
         </div>
-        <p className="font-semibold text-foreground">גררו קבצים לכאן</p>
-        <p className="mt-1 text-sm text-muted-foreground">או לחצו לבחירה מהמכשיר</p>
+        <p className="font-semibold text-foreground">Drag files here</p>
+        <p className="mt-1 text-sm text-muted-foreground">or click to browse your device</p>
         <input
           ref={inputRef}
           type="file"
@@ -138,7 +138,7 @@ function UploadPage() {
       {uploaded.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-success" /> הועלה זה עתה
+            <CheckCircle2 className="h-4 w-4 text-success" /> Just uploaded
           </h2>
           <div className="space-y-2">
             {uploaded.map((name, i) => (
@@ -154,23 +154,23 @@ function UploadPage() {
           <div className="mt-4 grid gap-2">
             <Button
               className="rounded-full"
-              onClick={() => toast("בקרוב: יצירת סיכום מהקובץ ✨")}
+              onClick={() => toast("Coming soon: generate notes from your file ✨")}
             >
-              <Sparkles className="h-4 w-4" /> צור סיכום
+              <Sparkles className="h-4 w-4" /> Generate notes
             </Button>
             <Button
               variant="secondary"
               className="rounded-full"
-              onClick={() => toast("בקרוב: יצירת מבחן מהקובץ ✨")}
+              onClick={() => toast("Coming soon: generate an exam from your file ✨")}
             >
-              <ClipboardList className="h-4 w-4" /> צור מבחן
+              <ClipboardList className="h-4 w-4" /> Generate exam
             </Button>
             <Button
               variant="outline"
               className="rounded-full"
-              onClick={() => toast("בקרוב: שאלו כל שאלה על החומר ✨")}
+              onClick={() => toast("Coming soon: ask anything about your material ✨")}
             >
-              <MessageCircleQuestion className="h-4 w-4" /> שאל כל דבר
+              <MessageCircleQuestion className="h-4 w-4" /> Ask anything
             </Button>
           </div>
         </div>
