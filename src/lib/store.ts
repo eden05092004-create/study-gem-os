@@ -196,6 +196,12 @@ type State = {
     answers: Record<string, string>,
   ) => Promise<void>;
   clearMistakes: () => Promise<void>;
+  deleteMistake: (id: string) => Promise<void>;
+  deleteCourse: (courseId: string) => Promise<void>;
+  deleteTopic: (courseId: string, topicId: string) => Promise<void>;
+  deleteFile: (courseId: string, topicId: string, fileId: string) => Promise<void>;
+  deleteExam: (courseId: string, topicId: string, examId: string) => Promise<void>;
+  deleteNote: (courseId: string, topicId: string, noteId: string) => Promise<void>;
 };
 
 function mapQuestion(q: {
@@ -670,5 +676,118 @@ export const useStore = create<State>((set, get) => ({
     if (!user) return;
     await supabase.from("mistakes").delete().eq("user_id", user.id);
     set({ mistakes: [] });
+  },
+
+  deleteMistake: async (id) => {
+    await supabase.from("mistakes").delete().eq("id", id);
+    set((st) => ({ mistakes: st.mistakes.filter((m) => m.id !== id) }));
+  },
+
+  deleteCourse: async (courseId) => {
+    const s = get();
+    const course = s.courses.find((c) => c.id === courseId);
+    if (!course) return;
+    const topicIds = course.topics.map((t) => t.id);
+    const examIds = course.topics.flatMap((t) => t.exams.map((e) => e.id));
+    await supabase.from("mistakes").delete().eq("course_id", courseId);
+    if (examIds.length) {
+      await supabase.from("answers").delete().in("exam_id", examIds);
+      await supabase.from("questions").delete().in("exam_id", examIds);
+      await supabase.from("exams").delete().in("id", examIds);
+    }
+    if (topicIds.length) {
+      await supabase.from("files").delete().in("topic_id", topicIds);
+      await supabase.from("notes").delete().in("topic_id", topicIds);
+      await supabase.from("topics").delete().in("id", topicIds);
+    }
+    await supabase.from("courses").delete().eq("id", courseId);
+    set((st) => ({
+      courses: st.courses.filter((c) => c.id !== courseId),
+      mistakes: st.mistakes.filter((m) => m.courseId !== courseId),
+    }));
+  },
+
+  deleteTopic: async (courseId, topicId) => {
+    const s = get();
+    const topic = s.courses
+      .find((c) => c.id === courseId)
+      ?.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+    const examIds = topic.exams.map((e) => e.id);
+    await supabase.from("mistakes").delete().eq("topic_id", topicId);
+    if (examIds.length) {
+      await supabase.from("answers").delete().in("exam_id", examIds);
+      await supabase.from("questions").delete().in("exam_id", examIds);
+      await supabase.from("exams").delete().in("id", examIds);
+    }
+    await supabase.from("files").delete().eq("topic_id", topicId);
+    await supabase.from("notes").delete().eq("topic_id", topicId);
+    await supabase.from("topics").delete().eq("id", topicId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? { ...c, topics: c.topics.filter((t) => t.id !== topicId) }
+          : c,
+      ),
+      mistakes: st.mistakes.filter((m) => m.topicId !== topicId),
+    }));
+  },
+
+  deleteFile: async (courseId, topicId, fileId) => {
+    await supabase.from("files").delete().eq("id", fileId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, files: t.files.filter((f) => f.id !== fileId) }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
+
+  deleteExam: async (courseId, topicId, examId) => {
+    await supabase.from("mistakes").delete().eq("exam_id", examId);
+    await supabase.from("answers").delete().eq("exam_id", examId);
+    await supabase.from("questions").delete().eq("exam_id", examId);
+    await supabase.from("exams").delete().eq("id", examId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, exams: t.exams.filter((e) => e.id !== examId) }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+      mistakes: st.mistakes.filter((m) => m.examId !== examId),
+    }));
+  },
+
+  deleteNote: async (courseId, topicId, noteId) => {
+    await supabase.from("notes").delete().eq("id", noteId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, notes: t.notes.filter((n) => n.id !== noteId) }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
   },
 }));

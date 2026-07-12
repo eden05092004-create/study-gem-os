@@ -16,6 +16,7 @@ import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 import { useStore, type FileItem } from "@/lib/store";
 
@@ -41,6 +42,9 @@ function TopicDetail() {
   const navigate = useNavigate();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const topic = course?.topics.find((t) => t.id === topicId);
+  const deleteFile = useStore((s) => s.deleteFile);
+  const deleteExam = useStore((s) => s.deleteExam);
+  const deleteNote = useStore((s) => s.deleteNote);
 
   if (!course || !topic) {
     return (
@@ -49,6 +53,8 @@ function TopicDetail() {
       </AppShell>
     );
   }
+
+  const params = { courseId, topicId };
 
   return (
     <AppShell>
@@ -83,17 +89,55 @@ function TopicDetail() {
           {topic.files.map((f) => {
             const Icon = kindIcon[f.kind];
             return (
-              <Card key={f.id} className="flex items-center gap-3 border-none p-3.5">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" />
+              <Card key={f.id} className="border-none p-3.5">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-foreground">
+                      {f.name}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {f.size} · added {f.addedAt}
+                    </div>
+                  </div>
+                  <ConfirmDelete
+                    title={`Delete "${f.name}"?`}
+                    description="This permanently removes the file from this topic."
+                    onConfirm={() => {
+                      deleteFile(courseId, topicId, f.id);
+                      toast.success("File deleted");
+                    }}
+                  />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-foreground">
-                    {f.name}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {f.size} · added {f.addedAt}
-                  </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    onClick={() => navigate({ to: "/generate-notes/$courseId/$topicId", params })}
+                  >
+                    <NotebookPen className="h-3.5 w-3.5" /> Generate Notes
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    onClick={() => navigate({ to: "/generate-exam/$courseId/$topicId", params })}
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" /> Generate Exam
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    onClick={() =>
+                      navigate({ to: "/generate-image-exam/$courseId/$topicId", params })
+                    }
+                  >
+                    <FileImage className="h-3.5 w-3.5" /> Image Questions
+                  </Button>
                 </div>
               </Card>
             );
@@ -110,31 +154,36 @@ function TopicDetail() {
             <EmptyState text="No notes yet — generate one from a file" />
           )}
           {topic.notes.map((n) => (
-            <Link
-              key={n.id}
-              to="/notes/$courseId/$topicId/$noteId"
-              params={{ courseId, topicId, noteId: n.id }}
-            >
-              <Card className="card-hover flex items-center gap-3 border-none p-4">
-                <NotebookPen className="h-5 w-5 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold text-foreground">{n.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {n.sections.length} sections · updated {n.updatedAt}
+            <div key={n.id} className="flex items-center gap-2">
+              <Link
+                to="/notes/$courseId/$topicId/$noteId"
+                params={{ courseId, topicId, noteId: n.id }}
+                className="min-w-0 flex-1"
+              >
+                <Card className="card-hover flex items-center gap-3 border-none p-4">
+                  <NotebookPen className="h-5 w-5 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold text-foreground">{n.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {n.sections.length} sections · updated {n.updatedAt}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </Link>
+                </Card>
+              </Link>
+              <ConfirmDelete
+                title={`Delete "${n.title}"?`}
+                description="This permanently deletes this note."
+                onConfirm={() => {
+                  deleteNote(courseId, topicId, n.id);
+                  toast.success("Note deleted");
+                }}
+              />
+            </div>
           ))}
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() =>
-              navigate({
-                to: "/generate-notes/$courseId/$topicId",
-                params: { courseId, topicId },
-              })
-            }
+            onClick={() => navigate({ to: "/generate-notes/$courseId/$topicId", params })}
           >
             <Sparkles className="h-4 w-4" /> Generate notes (AI)
           </Button>
@@ -152,6 +201,14 @@ function TopicDetail() {
                     {e.questions.length} questions · {e.durationMin} min
                   </div>
                 </div>
+                <ConfirmDelete
+                  title={`Delete "${e.title}"?`}
+                  description="This permanently deletes the exam and its questions."
+                  onConfirm={() => {
+                    deleteExam(courseId, topicId, e.id);
+                    toast.success("Exam deleted");
+                  }}
+                />
               </div>
               <Button
                 className="w-full rounded-full"
@@ -168,48 +225,28 @@ function TopicDetail() {
           ))}
           <Button
             className="w-full rounded-full"
-            onClick={() =>
-              navigate({
-                to: "/create-exam/$courseId/$topicId",
-                params: { courseId, topicId },
-              })
-            }
+            onClick={() => navigate({ to: "/create-exam/$courseId/$topicId", params })}
           >
             <ClipboardList className="h-4 w-4" /> Create exam manually
           </Button>
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() =>
-              navigate({
-                to: "/generate-exam/$courseId/$topicId",
-                params: { courseId, topicId },
-              })
-            }
+            onClick={() => navigate({ to: "/generate-exam/$courseId/$topicId", params })}
           >
             <Sparkles className="h-4 w-4" /> Generate exam (AI)
           </Button>
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() =>
-              navigate({
-                to: "/upload-exam/$courseId/$topicId",
-                params: { courseId, topicId },
-              })
-            }
+            onClick={() => navigate({ to: "/upload-exam/$courseId/$topicId", params })}
           >
             <UploadIcon className="h-4 w-4" /> Upload old exam (AI)
           </Button>
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() =>
-              navigate({
-                to: "/generate-image-exam/$courseId/$topicId",
-                params: { courseId, topicId },
-              })
-            }
+            onClick={() => navigate({ to: "/generate-image-exam/$courseId/$topicId", params })}
           >
             <FileImage className="h-4 w-4" /> Image questions (AI)
           </Button>

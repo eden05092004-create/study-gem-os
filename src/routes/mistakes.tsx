@@ -1,20 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, RotateCcw, XCircle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, RotateCcw, XCircle, CheckCircle2, Trash2 } from "lucide-react";
 import { AppShell, PageTitle } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExamRunner } from "@/components/ExamRunner";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { useStore } from "@/lib/store";
 import type { Question } from "@/lib/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/mistakes")({
   component: Mistakes,
 });
 
+
 function Mistakes() {
   const mistakes = useStore((s) => s.mistakes);
+  const clearMistakes = useStore((s) => s.clearMistakes);
+  const deleteMistake = useStore((s) => s.deleteMistake);
   const [retry, setRetry] = useState(false);
+
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof mistakes>();
@@ -56,9 +62,26 @@ function Mistakes() {
         </Card>
       ) : (
         <>
-          <Button className="mb-5 w-full rounded-full" onClick={() => setRetry(true)}>
-            <RotateCcw className="h-4 w-4" /> Retry mistakes only ({retryQuestions.length})
-          </Button>
+          <div className="mb-5 flex gap-2">
+            <Button className="flex-1 rounded-full" onClick={() => setRetry(true)}>
+              <RotateCcw className="h-4 w-4" /> Retry mistakes only ({retryQuestions.length})
+            </Button>
+            <ConfirmDelete
+              title="Clear all mistakes?"
+              description="This permanently removes every mistake from your notebook."
+              label="Clear all"
+              onConfirm={() => {
+                clearMistakes();
+                toast.success("Mistakes cleared");
+              }}
+              trigger={
+                <Button variant="outline" className="rounded-full">
+                  <Trash2 className="h-4 w-4" /> Clear all
+                </Button>
+              }
+            />
+          </div>
+
 
           <div className="space-y-5">
             {grouped.map(([courseName, items]) => (
@@ -71,7 +94,7 @@ function Mistakes() {
                     <Card key={m.id} className="border-none p-4">
                       <div className="mb-2 flex items-start gap-2">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-foreground">
                             {m.questionText}
                           </p>
@@ -79,7 +102,16 @@ function Mistakes() {
                             <p className="text-xs text-muted-foreground">{m.blankLabel}</p>
                           )}
                         </div>
+                        <ConfirmDelete
+                          title="Delete this mistake?"
+                          description="This removes this entry from your mistake notebook."
+                          onConfirm={() => {
+                            deleteMistake(m.id);
+                            toast.success("Mistake removed");
+                          }}
+                        />
                       </div>
+
                       <div className="space-y-1.5 pl-6 text-xs">
                         <div className="flex items-center gap-1.5 text-destructive">
                           <XCircle className="h-3.5 w-3.5 shrink-0" />
