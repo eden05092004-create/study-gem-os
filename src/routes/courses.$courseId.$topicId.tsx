@@ -187,6 +187,12 @@ function TopicDetail() {
           >
             <Sparkles className="h-4 w-4" /> Generate notes (AI)
           </Button>
+          <Button
+            className="w-full rounded-full"
+            onClick={() => navigate({ to: "/write-note/$courseId/$topicId", params })}
+          >
+            <NotebookPen className="h-4 w-4" /> Write notes myself
+          </Button>
         </TabsContent>
 
         <TabsContent value="exams" className="space-y-3">
