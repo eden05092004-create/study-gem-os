@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
-  ChevronRight,
+  ChevronLeft,
   FileText,
   FileImage,
   Presentation,
