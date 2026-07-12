@@ -1,8 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { FileText, Image, Type, LinkIcon, Presentation, Upload } from "lucide-react";
+import {
+  FileText,
+  Image,
+  Type,
+  LinkIcon,
+  Presentation,
+  Upload,
+  NotebookPen,
+  ClipboardList,
+  FileImage,
+} from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+
 
 export const Route = createFileRoute("/materials")({
   component: MaterialsPage,
