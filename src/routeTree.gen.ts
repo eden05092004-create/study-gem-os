@@ -13,6 +13,7 @@ import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MistakesRouteImport } from './routes/mistakes'
@@ -51,6 +52,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerRoute = PlannerRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/progress': typeof ProgressRoute
   '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/progress': typeof ProgressRoute
   '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/progress': typeof ProgressRoute
   '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/notes'
     | '/planner'
+    | '/progress'
     | '/quiz'
     | '/settings'
     | '/sitemap.xml'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/notes'
     | '/planner'
+    | '/progress'
     | '/quiz'
     | '/settings'
     | '/sitemap.xml'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/notes'
     | '/planner'
+    | '/progress'
     | '/quiz'
     | '/settings'
     | '/sitemap.xml'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   MistakesRoute: typeof MistakesRoute
   NotesRoute: typeof NotesRouteWithChildren
   PlannerRoute: typeof PlannerRoute
+  ProgressRoute: typeof ProgressRoute
   QuizRoute: typeof QuizRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/quiz'
       fullPath: '/quiz'
       preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planner': {
@@ -533,6 +553,7 @@ const rootRouteChildren: RootRouteChildren = {
   MistakesRoute: MistakesRoute,
   NotesRoute: NotesRouteWithChildren,
   PlannerRoute: PlannerRoute,
+  ProgressRoute: ProgressRoute,
   QuizRoute: QuizRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
