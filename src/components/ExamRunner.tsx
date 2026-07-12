@@ -165,7 +165,7 @@ export function ExamRunner({
                 ? "bg-warning/20 text-warning-foreground"
                 : "bg-muted text-muted-foreground",
             )}
-            aria-label="סמן שאלה"
+            aria-label="Flag question"
           >
             <Flag className="h-4 w-4" />
           </button>
