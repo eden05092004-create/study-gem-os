@@ -20,6 +20,7 @@ import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadExamCourseIdTopicIdRouteImport } from './routes/upload-exam.$courseId.$topicId'
 import { Route as GenerateNotesCourseIdTopicIdRouteImport } from './routes/generate-notes.$courseId.$topicId'
@@ -84,6 +85,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -133,6 +139,7 @@ const ExamCourseIdTopicIdExamIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
@@ -176,6 +184,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assistant'
     | '/auth'
     | '/calendar'
     | '/courses'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assistant'
     | '/auth'
     | '/calendar'
     | '/courses'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/assistant'
     | '/auth'
     | '/calendar'
     | '/courses'
@@ -263,6 +275,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
   CalendarRoute: typeof CalendarRoute
   CoursesRoute: typeof CoursesRouteWithChildren
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -442,6 +462,7 @@ const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
   CalendarRoute: CalendarRoute,
   CoursesRoute: CoursesRouteWithChildren,
