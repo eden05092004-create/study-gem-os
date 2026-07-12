@@ -337,7 +337,7 @@ function Planner() {
           </Card>
 
           <Button className="w-full rounded-full" onClick={handleGenerate}>
-            <Sparkles className="h-4 w-4" /> בנה תוכנית לימודים
+            <Sparkles className="h-4 w-4" /> Generate study plan
           </Button>
         </div>
       ) : (
