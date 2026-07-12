@@ -88,10 +88,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "StudyOS — Your calm study workspace" },
       {
         property: "og:description",
-        content: "Courses, materials, notes, AI tutor, quizzes, flashcards and a mistake notebook — all in one place.",
+        content: "StudyOS is a calm, all-in-one study workspace: courses, materials, notes, an AI tutor, question generator, quizzes, flashcards and a mistake notebook.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "StudyOS — Your calm study workspace" },
+      { name: "twitter:description", content: "StudyOS is a calm, all-in-one study workspace: courses, materials, notes, an AI tutor, question generator, quizzes, flashcards and a mistake notebook." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/213a48ea-4973-4f3c-84e9-e261d550833d/id-preview-3912ee54--ca267a39-ec79-46b1-8998-083e061dcacd.lovable.app-1783853647854.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/213a48ea-4973-4f3c-84e9-e261d550833d/id-preview-3912ee54--ca267a39-ec79-46b1-8998-083e061dcacd.lovable.app-1783853647854.png" },
     ],
     links: [
       {
