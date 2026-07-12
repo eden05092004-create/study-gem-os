@@ -196,6 +196,12 @@ type State = {
     answers: Record<string, string>,
   ) => Promise<void>;
   clearMistakes: () => Promise<void>;
+  deleteMistake: (id: string) => Promise<void>;
+  deleteCourse: (courseId: string) => Promise<void>;
+  deleteTopic: (courseId: string, topicId: string) => Promise<void>;
+  deleteFile: (courseId: string, topicId: string, fileId: string) => Promise<void>;
+  deleteExam: (courseId: string, topicId: string, examId: string) => Promise<void>;
+  deleteNote: (courseId: string, topicId: string, noteId: string) => Promise<void>;
 };
 
 function mapQuestion(q: {
