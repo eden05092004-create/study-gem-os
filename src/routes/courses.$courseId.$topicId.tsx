@@ -45,7 +45,7 @@ function TopicDetail() {
   if (!course || !topic) {
     return (
       <AppShell>
-        <EmptyState text="הנושא לא נמצא" />
+        <EmptyState text="Topic not found" />
       </AppShell>
     );
   }
@@ -56,25 +56,25 @@ function TopicDetail() {
         to="/courses"
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground"
       >
-        <ChevronRight className="h-4 w-4" /> {course.name}
+        <ChevronLeft className="h-4 w-4" /> {course.name}
       </Link>
       <h1 className="mb-4 flex items-center gap-2 text-2xl font-extrabold text-foreground">
         <span className="text-2xl">{course.emoji}</span> {topic.name}
       </h1>
 
-      <Tabs defaultValue="files" dir="rtl">
+      <Tabs defaultValue="files">
         <TabsList className="mb-4 grid w-full grid-cols-4 rounded-full">
           <TabsTrigger value="files" className="rounded-full text-xs">
-            <FileText className="ml-1 h-3.5 w-3.5" /> קבצים
+            <FileText className="mr-1 h-3.5 w-3.5" /> Files
           </TabsTrigger>
           <TabsTrigger value="notes" className="rounded-full text-xs">
-            <NotebookPen className="ml-1 h-3.5 w-3.5" /> סיכומים
+            <NotebookPen className="mr-1 h-3.5 w-3.5" /> Notes
           </TabsTrigger>
           <TabsTrigger value="exams" className="rounded-full text-xs">
-            <ClipboardList className="ml-1 h-3.5 w-3.5" /> מבחנים
+            <ClipboardList className="mr-1 h-3.5 w-3.5" /> Exams
           </TabsTrigger>
           <TabsTrigger value="cards" className="rounded-full text-xs">
-            <Layers className="ml-1 h-3.5 w-3.5" /> כרטיסיות
+            <Layers className="mr-1 h-3.5 w-3.5" /> Flashcards
           </TabsTrigger>
         </TabsList>
 
