@@ -115,7 +115,9 @@ export function isBlankCorrect(
   type: QuestionType,
 ) {
   if (value === undefined || value === "") return false;
-  if (type === "short") return normalizeShort(value) === normalizeShort(blank.correct);
+  // free-text comparison for short answer, or any blank without dropdown options
+  if (type === "short" || blank.options.length === 0)
+    return normalizeShort(value) === normalizeShort(blank.correct);
   return value === blank.correct;
 }
 
@@ -151,6 +153,8 @@ export type NewQuestion = {
   text: string;
   blanks: Blank[];
   explanations?: string[];
+  imageUrl?: string;
+  imageLabels?: ImageLabel[];
 };
 
 type State = {
