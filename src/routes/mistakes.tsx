@@ -17,7 +17,10 @@ export const Route = createFileRoute("/mistakes")({
 
 function Mistakes() {
   const mistakes = useStore((s) => s.mistakes);
+  const clearMistakes = useStore((s) => s.clearMistakes);
+  const deleteMistake = useStore((s) => s.deleteMistake);
   const [retry, setRetry] = useState(false);
+
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof mistakes>();
