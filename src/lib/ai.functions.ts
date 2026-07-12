@@ -351,20 +351,37 @@ Format rules per type:
     return { questions: out.questions };
   });
 
+type AiImageInput = { data: string; mediaType: string };
+
+function sanitizeImages(input: unknown): AiImageInput[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(
+      (im): im is AiImageInput =>
+        !!im && typeof im.data === "string" && typeof im.mediaType === "string",
+    )
+    .slice(0, 20)
+    .map((im) => ({ data: im.data, mediaType: im.mediaType }));
+}
+
 export const parseOldExam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { pdfBase64: string; mediaType?: string }) => {
-    if (typeof input?.pdfBase64 !== "string" || !input.pdfBase64)
-      throw new Error("A PDF is required");
-    return {
-      pdfBase64: input.pdfBase64,
-      mediaType: input.mediaType || "application/pdf",
-    };
-  })
+  .inputValidator(
+    (input: { pdfBase64: string; mediaType?: string; images?: AiImageInput[] }) => {
+      if (typeof input?.pdfBase64 !== "string" || !input.pdfBase64)
+        throw new Error("A PDF is required");
+      return {
+        pdfBase64: input.pdfBase64,
+        mediaType: input.mediaType || "application/pdf",
+        images: sanitizeImages(input.images),
+      };
+    },
+  )
   .handler(async ({ data, context }) => {
     const key = await getKey(context.supabase, context.userId);
     if (!key) throw new Error("AI features require an API key.");
 
+    const hasImages = data.images.length > 0;
     const system = `You transcribe an EXISTING exam PDF/document into structured questions for an interactive exam engine. CRITICAL RULES — follow exactly:
 
 1. REPRODUCE EXACTLY: copy every question, passage and answer option EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", or normalize anything. Keep original typos, punctuation, casing and spacing.
@@ -377,21 +394,84 @@ export const parseOldExam = createServerFn({ method: "POST" })
 
 5. Other formats: use "matching" (one blank per item, label = item, options = candidate descriptions), "truefalse" (one blank per statement, label = statement, options ["True","False"]), "short" (one blank, empty options, correct = accepted answer), or "mcq" only for a standalone single-answer multiple-choice question (one blank, options = choices).
 
-6. COMPLETENESS: report "detected" = number of questions found in the document, and "converted" = number successfully converted with a usable structure. These should match when everything converts.`;
+6. IMAGES: if a question refers to a figure/diagram shown in the material, KEEP the image. After the document, page images are supplied in order starting at index 0. Set imageIndex to the index of the page image that contains the figure for that question, and keep the question's normal type/blanks. When the original question asks to identify numbered structures on the figure, use type "image_identify" and supply imageLabels (id must match the blank id, x/y normalized 0..1). Never invent images that are not in the source.
 
-    const out = await callAnthropic(key, system, [
+7. COMPLETENESS: report "detected" = number of questions found in the document, and "converted" = number successfully converted with a usable structure. These should match when everything converts.`;
+
+    const content: ContentBlock[] = [
       {
         type: "document",
         source: { type: "base64", media_type: data.mediaType, data: data.pdfBase64 },
       },
-      {
-        type: "text",
-        text: 'Extract all questions from this exam PDF following the rules exactly. Remember: correct answers come only from the "The correct answer is: [...]" lines.',
-      },
-    ]);
+    ];
+    data.images.forEach((im) => {
+      content.push({
+        type: "image",
+        source: { type: "base64", media_type: im.mediaType, data: im.data },
+      });
+    });
+    content.push({
+      type: "text",
+      text: `Extract all questions from this exam following the rules exactly. Remember: correct answers come only from the "The correct answer is: [...]" lines.${
+        hasImages
+          ? " The images after the document are the page renders, indexed from 0 in order; reference them via imageIndex when a question uses a figure."
+          : ""
+      }`,
+    });
+
+    const out = await callAnthropic(key, system, content);
     return {
       questions: out.questions,
       detected: out.detected ?? out.questions.length,
       converted: out.converted ?? out.questions.length,
     };
+  });
+
+export const generateImageExam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { subject?: string; count?: number; images?: AiImageInput[] }) => {
+      const images = sanitizeImages(input.images);
+      if (images.length === 0) throw new Error("At least one image is required");
+      return {
+        subject: String(input.subject ?? "").slice(0, 2000),
+        count: Math.min(Math.max(Number(input.count) || images.length, 1), 60),
+        images,
+      };
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const key = await getKey(context.supabase, context.userId);
+    if (!key) throw new Error("AI features require an API key.");
+
+    const system = `You are a medical school examiner creating IMAGE-BASED exam questions from figures the student uploaded (anatomy diagrams, histology slides, chemical structures). Use ONLY the supplied images — never invent or describe images that are not provided. Images are supplied in order, indexed from 0.
+
+Generate up to ${data.count} questions via the save_questions tool. Use these image question types:
+
+- "image_identify": show the image with numbered markers on distinct structures. Provide imageLabels = one marker per structure (id = "1","2","3"…, x/y normalized 0..1 placed ON the structure). Provide one blank per marker: blank.id equals the marker id, blank.label = "Structure 1" etc., options = plausible structure names (include the correct one), correct = the exact right name. Set imageIndex to the image used.
+
+- "image_matching": match the image to its correct description. One blank; options = candidate descriptions; correct = the right one. Set imageIndex. Optionally omit imageLabels.
+
+- "image_clinical": ask a clinical-reasoning question about a marked structure (e.g. "The structure marked 3 is damaged — what is the clinical outcome?"). Set imageIndex, provide imageLabels for the referenced markers, and one blank with options (the clinical outcomes) and the correct answer.
+
+Rules:
+- Every blank / labeled structure is worth 1 point (partial credit).
+- Always set imageIndex to a valid index of a supplied image.
+- Coordinates must sit on the actual structure in the image.
+- Prefer image_identify for clear anatomy/histology figures.`;
+
+    const content: ContentBlock[] = data.images.map((im) => ({
+      type: "image" as const,
+      source: { type: "base64" as const, media_type: im.mediaType, data: im.data },
+    }));
+    content.push({
+      type: "text",
+      text: `Create image-based questions from the ${data.images.length} image(s) above (indexed from 0).${
+        data.subject ? `\nContext / topic: ${data.subject}` : ""
+      }`,
+    });
+
+    const out = await callAnthropic(key, system, content);
+    return { questions: out.questions };
+  });
   });
