@@ -244,7 +244,7 @@ function Planner() {
     await supabase.from("study_plans").upsert(
       {
         user_id: user.id,
-        exam_date: examDate || null,
+        exam_date: examDate || new Date().toISOString().slice(0, 10),
         topic_ids: lectureIds,
         weekly_hours: weeklyHours,
         days: nextDays,
