@@ -8,12 +8,36 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
-import { getAiKeyStatus, generateNotes } from "@/lib/ai.functions";
+import { getAiKeyStatus, generateNotesChunk } from "@/lib/ai.functions";
+import type { AiNoteSection } from "@/lib/ai.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/generate-notes/$courseId/$topicId")({
   component: GenerateNotesPage,
 });
+
+// Split the 9 sections into small batches so each AI call stays fast and
+// never hits the request timeout. Zero-omission is preserved because every
+// batch is instructed to read the whole source; batches only limit output.
+const SECTION_BATCHES: { keys: string[]; label: string }[] = [
+  { keys: ["overview"], label: "Overview" },
+  { keys: ["full"], label: "Full Content" },
+  { keys: ["tables", "highyield", "clinical"], label: "Tables & High Yield" },
+  { keys: ["mistakes", "details", "quickcheck", "coverage"], label: "Details & Review" },
+];
+
+const SECTION_ORDER = [
+  "overview",
+  "full",
+  "tables",
+  "highyield",
+  "clinical",
+  "mistakes",
+  "details",
+  "quickcheck",
+  "coverage",
+];
+
 
 const DETAIL_OPTIONS = [
   { value: "detailed", label: "Detailed", desc: "Exhaustive, longest" },
