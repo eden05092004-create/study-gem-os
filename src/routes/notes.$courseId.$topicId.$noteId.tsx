@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronLeft, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronDown, Pencil } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
@@ -39,7 +40,17 @@ function NoteViewer() {
       <h1 className="mb-1 text-2xl font-extrabold leading-tight text-foreground">
         {note.title}
       </h1>
-      <p className="mb-5 text-sm text-muted-foreground">Updated {note.updatedAt}</p>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">Updated {note.updatedAt}</p>
+        <Button asChild size="sm" variant="outline" className="rounded-full">
+          <Link
+            to="/edit-note/$courseId/$topicId/$noteId"
+            params={{ courseId, topicId, noteId }}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Link>
+        </Button>
+      </div>
 
       <div className="space-y-3">
         {note.sections.map((sec) => {

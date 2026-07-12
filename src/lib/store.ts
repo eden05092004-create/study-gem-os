@@ -202,6 +202,13 @@ type State = {
   deleteFile: (courseId: string, topicId: string, fileId: string) => Promise<void>;
   deleteExam: (courseId: string, topicId: string, examId: string) => Promise<void>;
   deleteNote: (courseId: string, topicId: string, noteId: string) => Promise<void>;
+  updateNote: (
+    courseId: string,
+    topicId: string,
+    noteId: string,
+    title: string,
+    sections: NoteSection[],
+  ) => Promise<void>;
 };
 
 function mapQuestion(q: {
@@ -783,6 +790,32 @@ export const useStore = create<State>((set, get) => ({
               topics: c.topics.map((t) =>
                 t.id === topicId
                   ? { ...t, notes: t.notes.filter((n) => n.id !== noteId) }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
+  updateNote: async (courseId, topicId, noteId, title, sections) => {
+    const updatedAt = new Date().toISOString();
+    await supabase
+      .from("notes")
+      .update({ title, sections, updated_at: updatedAt })
+      .eq("id", noteId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? {
+                      ...t,
+                      notes: t.notes.map((n) =>
+                        n.id === noteId ? { ...n, title, sections, updatedAt } : n,
+                      ),
+                    }
                   : t,
               ),
             }
