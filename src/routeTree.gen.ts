@@ -14,6 +14,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as MistakesRouteImport } from './routes/mistakes'
+import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as CalendarRouteImport } from './routes/calendar'
@@ -50,6 +51,11 @@ const PlannerRoute = PlannerRouteImport.update({
 const MistakesRoute = MistakesRouteImport.update({
   id: '/mistakes',
   path: '/mistakes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaterialsRoute = MaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExamsRoute = ExamsRouteImport.update({
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
   '/planner': typeof PlannerRoute
   '/settings': typeof SettingsRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
   '/planner': typeof PlannerRoute
   '/settings': typeof SettingsRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
   '/planner': typeof PlannerRoute
   '/settings': typeof SettingsRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/courses'
     | '/exams'
+    | '/materials'
     | '/mistakes'
     | '/planner'
     | '/settings'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/courses'
     | '/exams'
+    | '/materials'
     | '/mistakes'
     | '/planner'
     | '/settings'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/courses'
     | '/exams'
+    | '/materials'
     | '/mistakes'
     | '/planner'
     | '/settings'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   CoursesRoute: typeof CoursesRouteWithChildren
   ExamsRoute: typeof ExamsRoute
+  MaterialsRoute: typeof MaterialsRoute
   MistakesRoute: typeof MistakesRoute
   PlannerRoute: typeof PlannerRoute
   SettingsRoute: typeof SettingsRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/mistakes'
       fullPath: '/mistakes'
       preLoaderRoute: typeof MistakesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/materials': {
+      id: '/materials'
+      path: '/materials'
+      fullPath: '/materials'
+      preLoaderRoute: typeof MaterialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exams': {
@@ -397,6 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   CoursesRoute: CoursesRouteWithChildren,
   ExamsRoute: ExamsRoute,
+  MaterialsRoute: MaterialsRoute,
   MistakesRoute: MistakesRoute,
   PlannerRoute: PlannerRoute,
   SettingsRoute: SettingsRoute,
