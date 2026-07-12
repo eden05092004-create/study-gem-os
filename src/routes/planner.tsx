@@ -346,7 +346,7 @@ function Planner() {
           <Card className="border-none p-4">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">
-                התקדמות — {doneItems}/{totalItems}
+                Progress — {doneItems}/{totalItems}
               </p>
               <span className="text-sm font-bold text-primary">{progress}%</span>
             </div>
@@ -358,7 +358,7 @@ function Planner() {
                 className="flex-1 rounded-full"
                 onClick={() => setShowForm(true)}
               >
-                <RefreshCw className="h-4 w-4" /> ערוך
+                <RefreshCw className="h-4 w-4" /> Edit
               </Button>
               <Button
                 variant="outline"
@@ -366,7 +366,7 @@ function Planner() {
                 className="flex-1 rounded-full text-destructive"
                 onClick={handleReset}
               >
-                <Trash2 className="h-4 w-4" /> אפס
+                <Trash2 className="h-4 w-4" /> Reset
               </Button>
             </div>
           </Card>
