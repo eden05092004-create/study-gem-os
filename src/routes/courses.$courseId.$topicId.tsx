@@ -107,7 +107,7 @@ function TopicDetail() {
 
         <TabsContent value="notes" className="space-y-3">
           {topic.notes.length === 0 && (
-            <EmptyState text="אין סיכומים עדיין — צרו אחד מקובץ" />
+            <EmptyState text="No notes yet — generate one from a file" />
           )}
           {topic.notes.map((n) => (
             <Link
@@ -120,7 +120,7 @@ function TopicDetail() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-foreground">{n.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {n.sections.length} מקטעים · עודכן {n.updatedAt}
+                    {n.sections.length} sections · updated {n.updatedAt}
                   </div>
                 </div>
               </Card>
@@ -129,9 +129,9 @@ function TopicDetail() {
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() => toast("בקרוב: יצירת סיכום אוטומטי מקובץ ✨")}
+            onClick={() => toast("Coming soon: auto-generate notes from a file ✨")}
           >
-            <Sparkles className="h-4 w-4" /> צור סיכום (AI)
+            <Sparkles className="h-4 w-4" /> Generate notes (AI)
           </Button>
         </TabsContent>
 
