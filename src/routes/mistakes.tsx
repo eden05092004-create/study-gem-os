@@ -62,9 +62,26 @@ function Mistakes() {
         </Card>
       ) : (
         <>
-          <Button className="mb-5 w-full rounded-full" onClick={() => setRetry(true)}>
-            <RotateCcw className="h-4 w-4" /> Retry mistakes only ({retryQuestions.length})
-          </Button>
+          <div className="mb-5 flex gap-2">
+            <Button className="flex-1 rounded-full" onClick={() => setRetry(true)}>
+              <RotateCcw className="h-4 w-4" /> Retry mistakes only ({retryQuestions.length})
+            </Button>
+            <ConfirmDelete
+              title="Clear all mistakes?"
+              description="This permanently removes every mistake from your notebook."
+              label="Clear all"
+              onConfirm={() => {
+                clearMistakes();
+                toast.success("Mistakes cleared");
+              }}
+              trigger={
+                <Button variant="outline" className="rounded-full">
+                  <Trash2 className="h-4 w-4" /> Clear all
+                </Button>
+              }
+            />
+          </div>
+
 
           <div className="space-y-5">
             {grouped.map(([courseName, items]) => (
