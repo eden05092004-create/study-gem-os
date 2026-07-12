@@ -58,7 +58,7 @@ export function ExamRunner({
     return (
       <div className="pt-2">
         <Card className="soft-shadow mb-5 border-none p-6 text-center">
-          <p className="text-sm text-muted-foreground">התוצאה שלך</p>
+          <p className="text-sm text-muted-foreground">Your score</p>
           <div className="my-2 text-5xl font-extrabold text-primary">{result.pct}%</div>
           <p className="text-sm text-muted-foreground">{title}</p>
         </Card>
@@ -66,25 +66,25 @@ export function ExamRunner({
           <Card className="border-none bg-success/10 p-4 text-center">
             <CheckCircle2 className="mx-auto mb-1 h-5 w-5 text-success" />
             <div className="text-xl font-bold text-foreground">{result.correct}</div>
-            <div className="text-[11px] text-muted-foreground">נכונות</div>
+            <div className="text-[11px] text-muted-foreground">Correct</div>
           </Card>
           <Card className="border-none bg-destructive/10 p-4 text-center">
             <XCircle className="mx-auto mb-1 h-5 w-5 text-destructive" />
             <div className="text-xl font-bold text-foreground">{result.wrong}</div>
-            <div className="text-[11px] text-muted-foreground">שגויות</div>
+            <div className="text-[11px] text-muted-foreground">Wrong</div>
           </Card>
           <Card className="border-none bg-muted p-4 text-center">
             <MinusCircle className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
             <div className="text-xl font-bold text-foreground">{result.skipped}</div>
-            <div className="text-[11px] text-muted-foreground">דילוגים</div>
+            <div className="text-[11px] text-muted-foreground">Skipped</div>
           </Card>
         </div>
         <div className="space-y-3">
           <Button className="w-full rounded-full" onClick={() => setPhase("review")}>
-            סקירת תשובות
+            Review answers
           </Button>
           <Button asChild variant="outline" className="w-full rounded-full">
-            <Link to="/exams">חזרה למבחנים</Link>
+            <Link to="/exams">Back to exams</Link>
           </Button>
         </div>
       </div>
