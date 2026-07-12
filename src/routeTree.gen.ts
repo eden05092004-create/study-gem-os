@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MistakesRouteImport } from './routes/mistakes'
@@ -44,6 +45,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerRoute = PlannerRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/notes'
     | '/planner'
+    | '/quiz'
     | '/settings'
     | '/sitemap.xml'
     | '/upload'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/notes'
     | '/planner'
+    | '/quiz'
     | '/settings'
     | '/sitemap.xml'
     | '/upload'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/notes'
     | '/planner'
+    | '/quiz'
     | '/settings'
     | '/sitemap.xml'
     | '/upload'
@@ -297,6 +309,7 @@ export interface RootRouteChildren {
   MistakesRoute: typeof MistakesRoute
   NotesRoute: typeof NotesRouteWithChildren
   PlannerRoute: typeof PlannerRoute
+  QuizRoute: typeof QuizRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
@@ -328,6 +341,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planner': {
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   MistakesRoute: MistakesRoute,
   NotesRoute: NotesRouteWithChildren,
   PlannerRoute: PlannerRoute,
+  QuizRoute: QuizRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
