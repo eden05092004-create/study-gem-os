@@ -23,7 +23,15 @@ export type Note = {
   sections: NoteSection[];
 };
 
-export type QuestionType = "mcq" | "cloze" | "matching" | "truefalse" | "short";
+export type QuestionType =
+  | "mcq"
+  | "cloze"
+  | "matching"
+  | "truefalse"
+  | "short"
+  | "image_identify"
+  | "image_matching"
+  | "image_clinical";
 
 /** A single gradable unit inside a question (worth 1 point) */
 export type Blank = {
@@ -36,6 +44,13 @@ export type Blank = {
   correct: string;
 };
 
+/** A numbered marker overlaid on a question image (coords normalized 0..1) */
+export type ImageLabel = {
+  id: string;
+  x: number;
+  y: number;
+};
+
 export type Question = {
   id: string;
   type: QuestionType;
@@ -44,6 +59,10 @@ export type Question = {
   blanks: Blank[];
   /** per-option explanation, only used for mcq review */
   explanations: string[];
+  /** image shown inside the question (data URL) for image_* types */
+  imageUrl?: string;
+  /** numbered markers placed on the image; id matches a blank id */
+  imageLabels?: ImageLabel[];
 };
 
 export type Exam = {
@@ -96,7 +115,9 @@ export function isBlankCorrect(
   type: QuestionType,
 ) {
   if (value === undefined || value === "") return false;
-  if (type === "short") return normalizeShort(value) === normalizeShort(blank.correct);
+  // free-text comparison for short answer, or any blank without dropdown options
+  if (type === "short" || blank.options.length === 0)
+    return normalizeShort(value) === normalizeShort(blank.correct);
   return value === blank.correct;
 }
 
@@ -132,6 +153,8 @@ export type NewQuestion = {
   text: string;
   blanks: Blank[];
   explanations?: string[];
+  imageUrl?: string;
+  imageLabels?: ImageLabel[];
 };
 
 type State = {
@@ -183,6 +206,8 @@ function mapQuestion(q: {
   correct_index: number | null;
   blanks: unknown;
   explanations: unknown;
+  image_url?: string | null;
+  image_labels?: unknown;
 }): Question {
   const type = (q.type as QuestionType) ?? "mcq";
   let blanks = (q.blanks as Blank[]) ?? [];
@@ -203,6 +228,8 @@ function mapQuestion(q: {
     text: q.text,
     blanks,
     explanations: (q.explanations as string[]) ?? [],
+    imageUrl: q.image_url ?? undefined,
+    imageLabels: (q.image_labels as ImageLabel[]) ?? [],
   };
 }
 
@@ -502,6 +529,8 @@ export const useStore = create<State>((set, get) => ({
         options: opts,
         correct_index: correctIndex,
         explanations: q.explanations ?? [],
+        image_url: q.imageUrl ?? null,
+        image_labels: q.imageLabels ?? [],
         position: i,
       };
     });

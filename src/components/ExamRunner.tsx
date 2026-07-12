@@ -13,6 +13,7 @@ import {
   gradeQuestion,
   type Question,
   type Blank,
+  type ImageLabel,
 } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,24 @@ function parseCloze(text: string): { type: "text" | "blank"; value: string }[] {
   return parts;
 }
 
+/** an image with numbered markers overlaid at normalized coordinates */
+function ImageBlock({ url, labels }: { url: string; labels?: ImageLabel[] }) {
+  return (
+    <div className="relative mb-4 overflow-hidden rounded-xl border border-border bg-muted">
+      <img src={url} alt="Question figure" className="w-full object-contain" />
+      {labels?.map((l) => (
+        <span
+          key={l.id}
+          className="absolute grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground ring-2 ring-background"
+          style={{ left: `${l.x * 100}%`, top: `${l.y * 100}%` }}
+        >
+          {l.id}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function QuestionBody({
   q,
   answers,
@@ -79,6 +98,74 @@ function QuestionBody({
   setAnswer: (blankId: string, v: string) => void;
 }) {
   const key = (b: string) => `${q.id}:${b}`;
+
+  // image-based questions: show the figure, then answer rows/inputs
+  if (q.type.startsWith("image")) {
+    const clinicalSingle = q.type === "image_clinical" && q.blanks.length === 1;
+    const single = clinicalSingle ? q.blanks[0] : null;
+    return (
+      <div>
+        {q.imageUrl && <ImageBlock url={q.imageUrl} labels={q.imageLabels} />}
+        {single && single.options.length > 0 ? (
+          <RadioGroup
+            value={answers[key(single.id)] ?? ""}
+            onValueChange={(v) => setAnswer(single.id, v)}
+            className="space-y-2"
+          >
+            {single.options.map((opt, oi) => (
+              <label
+                key={oi}
+                htmlFor={`${q.id}-${oi}`}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors",
+                  answers[key(single.id)] === opt
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/50",
+                )}
+              >
+                <RadioGroupItem id={`${q.id}-${oi}`} value={opt} />
+                <span className="text-sm font-medium text-foreground">{opt}</span>
+              </label>
+            ))}
+          </RadioGroup>
+        ) : single ? (
+          <Input
+            placeholder="Type your answer…"
+            value={answers[key(single.id)] ?? ""}
+            onChange={(e) => setAnswer(single.id, e.target.value)}
+          />
+        ) : (
+          <div className="space-y-2.5">
+            {q.blanks.map((blank) => (
+              <div
+                key={blank.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"
+              >
+                <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+                  {blank.label || blank.id}
+                </span>
+                {blank.options.length > 0 ? (
+                  <BlankSelect
+                    blank={blank}
+                    value={answers[key(blank.id)]}
+                    onChange={(v) => setAnswer(blank.id, v)}
+                  />
+                ) : (
+                  <Input
+                    className="max-w-[12rem]"
+                    placeholder="Answer…"
+                    value={answers[key(blank.id)] ?? ""}
+                    onChange={(e) => setAnswer(blank.id, e.target.value)}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
 
   if (q.type === "mcq") {
     const blank = q.blanks[0];
@@ -249,6 +336,12 @@ export function ExamRunner({
                   Mark {g.earned.toFixed(1)} out of {g.total.toFixed(1)}
                 </span>
               </div>
+
+              {question.imageUrl && (
+                <ImageBlock url={question.imageUrl} labels={question.imageLabels} />
+              )}
+
+
 
               {isCloze && (
                 <p className="mb-3 text-[15px] leading-7 text-muted-foreground">
