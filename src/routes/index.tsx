@@ -60,7 +60,7 @@ function Home() {
     <AppShell>
       <header className="mb-6 flex items-start justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">שלום וברוך שובך 👋</p>
+          <p className="text-sm text-muted-foreground">Welcome back 👋</p>
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             {userName}
           </h1>
@@ -70,7 +70,7 @@ function Home() {
           size="icon"
           className="rounded-full text-muted-foreground"
           onClick={signOut}
-          aria-label="התנתק"
+          aria-label="Sign out"
         >
           <LogOut className="h-5 w-5" />
         </Button>
@@ -96,13 +96,15 @@ function Home() {
       <Card className="soft-shadow mb-6 overflow-hidden border-none bg-gradient-to-l from-primary to-secondary p-5 text-primary-foreground">
         <div className="mb-1 flex items-center gap-2">
           <Sparkles className="h-5 w-5" />
-          <span className="text-sm font-semibold opacity-90">מה ללמוד עכשיו</span>
+          <span className="text-sm font-semibold opacity-90">What to study now</span>
         </div>
         <h3 className="text-xl font-extrabold">
-          {firstTopic ? `${courses[0].name} · ${firstTopic.name}` : "התחילו קורס חדש"}
+          {firstTopic ? `${courses[0].name} · ${firstTopic.name}` : "Start a new course"}
         </h3>
         <p className="mt-1 text-sm opacity-90">
-          המבחן הקרוב בעוד {daysLeft(nextExamDate)} ימים — כדאי לחזור על הנושא הזה.
+          {firstTopic
+            ? `Your next exam is in ${daysLeft(nextExamDate)} days — a good time to review this topic.`
+            : "Create your first course to get started."}
         </p>
         {firstTopic && (
           <Button
@@ -110,38 +112,50 @@ function Home() {
             variant="secondary"
             className="mt-4 rounded-full font-semibold"
           >
-            <Link to="/exams">התחל תרגול</Link>
+            <Link to="/exams">Start practicing</Link>
           </Button>
         )}
       </Card>
 
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">קורסים אחרונים</h2>
+        <h2 className="text-lg font-bold text-foreground">Recent courses</h2>
         <Link
           to="/courses"
           className="flex items-center gap-1 text-sm font-medium text-primary"
         >
-          הצג הכל <ArrowLeft className="h-4 w-4" />
+          View all <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-      <div className="space-y-3">
-        {recent.map((c) => (
-          <Link key={c.id} to="/courses">
-            <Card className="card-hover flex items-center gap-3 border-none bg-card p-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-muted text-xl">
-                {c.emoji}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold text-foreground">{c.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {c.topics.length} נושאים
+      {recent.length === 0 ? (
+        <Card className="border-none p-8 text-center">
+          <p className="font-semibold text-foreground">No courses yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create your first course to get started.
+          </p>
+          <Button asChild className="mt-4 rounded-full">
+            <Link to="/courses">Create a course</Link>
+          </Button>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {recent.map((c) => (
+            <Link key={c.id} to="/courses">
+              <Card className="card-hover flex items-center gap-3 border-none bg-card p-4">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-muted text-xl">
+                  {c.emoji}
                 </div>
-              </div>
-              <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </Card>
-          </Link>
-        ))}
-      </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-foreground">{c.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {c.topics.length} topics
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }
