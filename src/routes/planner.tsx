@@ -251,8 +251,8 @@ function Planner() {
   return (
     <AppShell>
       <PageTitle
-        title="תכנון לימודים"
-        subtitle="בנו לוח זמנים חכם עד למבחן, עם חזרות אוטומטיות"
+        title="Study planner"
+        subtitle="Build a smart schedule until your exam, with automatic reviews"
       />
 
       {loading ? null : showForm ? (
