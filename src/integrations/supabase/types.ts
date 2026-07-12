@@ -324,6 +324,39 @@ export type Database = {
           },
         ]
       }
+      study_plans: {
+        Row: {
+          created_at: string
+          days: Json
+          exam_date: string
+          id: string
+          topic_ids: Json
+          updated_at: string
+          user_id: string
+          weekly_hours: Json
+        }
+        Insert: {
+          created_at?: string
+          days?: Json
+          exam_date: string
+          id?: string
+          topic_ids?: Json
+          updated_at?: string
+          user_id: string
+          weekly_hours?: Json
+        }
+        Update: {
+          created_at?: string
+          days?: Json
+          exam_date?: string
+          id?: string
+          topic_ids?: Json
+          updated_at?: string
+          user_id?: string
+          weekly_hours?: Json
+        }
+        Relationships: []
+      }
       topics: {
         Row: {
           course_id: string

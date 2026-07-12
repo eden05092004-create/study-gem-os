@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as MistakesRouteImport } from './routes/mistakes'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
@@ -28,6 +29,11 @@ const UploadRoute = UploadRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MistakesRoute = MistakesRouteImport.update({
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/mistakes': typeof MistakesRoute
+  '/planner': typeof PlannerRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/mistakes': typeof MistakesRoute
+  '/planner': typeof PlannerRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
   '/mistakes': typeof MistakesRoute
+  '/planner': typeof PlannerRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/courses/$courseId/$topicId': typeof CoursesCourseIdTopicIdRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/exams'
     | '/mistakes'
+    | '/planner'
     | '/sitemap.xml'
     | '/upload'
     | '/courses/$courseId/$topicId'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/exams'
     | '/mistakes'
+    | '/planner'
     | '/sitemap.xml'
     | '/upload'
     | '/courses/$courseId/$topicId'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/exams'
     | '/mistakes'
+    | '/planner'
     | '/sitemap.xml'
     | '/upload'
     | '/courses/$courseId/$topicId'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   CoursesRoute: typeof CoursesRouteWithChildren
   ExamsRoute: typeof ExamsRoute
   MistakesRoute: typeof MistakesRoute
+  PlannerRoute: typeof PlannerRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
   ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mistakes': {
@@ -253,6 +273,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesRoute: CoursesRouteWithChildren,
   ExamsRoute: ExamsRoute,
   MistakesRoute: MistakesRoute,
+  PlannerRoute: PlannerRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
   ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
@@ -261,3 +282,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
