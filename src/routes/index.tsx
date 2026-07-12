@@ -24,6 +24,13 @@ function daysLeft(iso: string) {
 function Home() {
   const { userName, studyHoursToday, questionsSolved, nextExamDate, courses } =
     useStore();
+  const navigate = useNavigate();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  };
+
 
   const stats = [
     {
