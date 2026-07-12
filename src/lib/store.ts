@@ -553,7 +553,7 @@ export const useStore = create<State>((set, get) => ({
     return data.id;
   },
 
-
+  recordExamResult: async (courseId, topicId, examId, answers) => {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (!user) return;
