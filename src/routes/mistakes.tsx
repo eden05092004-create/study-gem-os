@@ -28,9 +28,9 @@ function Mistakes() {
   if (retry) {
     return (
       <AppShell>
-        <h1 className="mb-4 text-xl font-extrabold text-foreground">תרגול טעויות</h1>
+        <h1 className="mb-4 text-xl font-extrabold text-foreground">Practice mistakes</h1>
         <ExamRunner
-          title="תרגול טעויות"
+          title="Practice mistakes"
           questions={mistakes.map((m) => m.question)}
         />
       </AppShell>
