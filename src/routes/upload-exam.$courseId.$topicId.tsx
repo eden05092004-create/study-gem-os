@@ -78,7 +78,18 @@ function UploadExamPage() {
     setReport(null);
     try {
       const pdfBase64 = await fileToBase64(file);
-      const res = await runParse({ data: { pdfBase64, mediaType: "application/pdf" } });
+      // render pages so the AI can keep original figures inside questions
+      const pageImages = await extractImages([file]).catch(() => []);
+      const res = await runParse({
+        data: {
+          pdfBase64,
+          mediaType: "application/pdf",
+          images: pageImages.map((im) => ({
+            data: stripDataUrl(im.dataUrl),
+            mediaType: im.mediaType,
+          })),
+        },
+      });
       setReport({ detected: res.detected, converted: res.converted });
       if (!res.questions.length) {
         toast.error("No questions could be extracted from this PDF.");
@@ -89,12 +100,17 @@ function UploadExamPage() {
         topicId,
         file.name.replace(/\.pdf$/i, "") || `${topic.name} — past exam`,
         Math.max(10, Math.round(res.questions.length * 1.2)),
-        res.questions.map((q) => ({
-          type: q.type as QuestionType,
-          text: q.text,
-          blanks: q.blanks,
-          explanations: q.explanations ?? [],
-        })),
+        res.questions.map((q) => {
+          const hasImg = q.imageIndex !== undefined && pageImages[q.imageIndex];
+          return {
+            type: q.type as QuestionType,
+            text: q.text,
+            blanks: q.blanks,
+            explanations: q.explanations ?? [],
+            imageUrl: hasImg ? pageImages[q.imageIndex!].dataUrl : undefined,
+            imageLabels: hasImg ? q.imageLabels ?? [] : undefined,
+          };
+        }),
       );
       toast.success(`Saved exam with ${res.questions.length} questions`);
     } catch (e) {
