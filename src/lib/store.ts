@@ -341,6 +341,7 @@ async function loadAll() {
       files: filesByTopic.get(t.id) ?? [],
       notes: notesByTopic.get(t.id) ?? [],
       exams: examsByTopic.get(t.id) ?? [],
+      lectures: lecturesByTopic.get(t.id) ?? [],
     });
     topicsByCourse.set(t.course_id, arr);
   }
