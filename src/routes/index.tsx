@@ -1,17 +1,14 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Clock,
-  CalendarClock,
-  CheckCircle2,
-  Sparkles,
+  BookOpen,
+  Layers,
+  AlertOctagon,
   ArrowRight,
-  LogOut,
-  Settings,
+  Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -22,150 +19,159 @@ function daysLeft(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
 }
 
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+type Stat = { label: string; value: string; hint: string; icon: LucideIcon };
+
 function Home() {
-  const { userName, studyHoursToday, questionsSolved, nextExamDate, courses } =
+  const { userName, studyHoursToday, questionsSolved, nextExamDate, courses, mistakes } =
     useStore();
-  const navigate = useNavigate();
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const topicCount = courses.reduce((n, c) => n + c.topics.length, 0);
 
-
-  const stats = [
+  const stats: Stat[] = [
     {
-      label: "Study hours today",
-      value: studyHoursToday.toString(),
+      label: "Study time",
+      value: `${studyHoursToday}h`,
+      hint: "logged today",
       icon: Clock,
-      tint: "bg-primary/10 text-primary",
     },
     {
-      label: "Days until next exam",
-      value: daysLeft(nextExamDate).toString(),
-      icon: CalendarClock,
-      tint: "bg-accent/40 text-accent-foreground",
+      label: "Courses",
+      value: courses.length.toString(),
+      hint: `${topicCount} topics`,
+      icon: BookOpen,
     },
     {
-      label: "Questions solved",
+      label: "Questions",
       value: questionsSolved.toString(),
-      icon: CheckCircle2,
-      tint: "bg-success/15 text-success",
+      hint: "solved",
+      icon: Layers,
+    },
+    {
+      label: "Mistakes",
+      value: mistakes.length.toString(),
+      hint: "to review",
+      icon: AlertOctagon,
     },
   ];
 
-  const recent = courses.slice(0, 3);
+  const recent = courses.slice(0, 4);
   const firstTopic = courses[0]?.topics[0];
 
   return (
     <AppShell>
-      <header className="mb-6 flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Welcome back 👋</p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-            {userName}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-muted-foreground"
-            aria-label="Settings"
-          >
-            <Link to="/settings">
-              <Settings className="h-5 w-5" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-muted-foreground"
-            onClick={signOut}
-            aria-label="Sign out"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
+      <header className="mb-8">
+        <p className="eyebrow mb-2">{greeting()}</p>
+        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">
+          {userName || "Welcome"}
+        </h1>
+        <p className="mt-2 text-[15px] text-muted-foreground">
+          {courses.length
+            ? `You have ${topicCount} topics across ${courses.length} courses. Keep going.`
+            : "Create your first course to start building your workspace."}
+        </p>
       </header>
 
-
-      <div className="mb-6 grid grid-cols-3 gap-3">
+      <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
-          <Card key={s.label} className="soft-shadow border-none p-3 text-center">
-            <div
-              className={`mx-auto mb-2 grid h-9 w-9 place-items-center rounded-xl ${s.tint}`}
-            >
-              <s.icon className="h-4.5 w-4.5" />
+          <div
+            key={s.label}
+            className="soft-shadow rounded-2xl border border-border bg-card p-5"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <span className="eyebrow">{s.label}</span>
+              <s.icon className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="text-2xl font-extrabold text-foreground">{s.value}</div>
-            <div className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
-              {s.label}
+            <div className="font-display text-3xl font-semibold text-foreground">
+              {s.value}
             </div>
-          </Card>
+            <div className="mt-1 text-xs text-muted-foreground">{s.hint}</div>
+          </div>
         ))}
       </div>
 
-      <Card className="soft-shadow mb-6 overflow-hidden border-none bg-gradient-to-l from-primary to-secondary p-5 text-primary-foreground">
-        <div className="mb-1 flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          <span className="text-sm font-semibold opacity-90">What to study now</span>
+      <div className="mb-10 overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground">
+        <div className="mb-2 flex items-center gap-2 opacity-80">
+          <Sparkles className="h-4 w-4" />
+          <span className="text-xs font-semibold uppercase tracking-wider">
+            What to study now
+          </span>
         </div>
-        <h3 className="text-xl font-extrabold">
-          {firstTopic ? `${courses[0].name} · ${firstTopic.name}` : "Start a new course"}
-        </h3>
-        <p className="mt-1 text-sm opacity-90">
+        <h2 className="font-display text-2xl font-semibold">
           {firstTopic
-            ? `Your next exam is in ${daysLeft(nextExamDate)} days — a good time to review this topic.`
-            : "Create your first course to get started."}
+            ? `${courses[0].name} · ${firstTopic.name}`
+            : "Start a new course"}
+        </h2>
+        <p className="mt-2 max-w-lg text-sm opacity-80">
+          {firstTopic
+            ? `Your next exam is in ${daysLeft(nextExamDate)} days — a good moment to review this topic.`
+            : "Add courses, upload materials, and let StudyOS help you prepare."}
         </p>
-        {firstTopic && (
-          <Button
-            asChild
-            variant="secondary"
-            className="mt-4 rounded-full font-semibold"
-          >
-            <Link to="/exams">Start practicing</Link>
-          </Button>
-        )}
-      </Card>
+        <Link
+          to={firstTopic ? "/quiz" : "/courses"}
+          className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-primary-foreground px-5 py-2.5 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
+        >
+          {firstTopic ? "Start practicing" : "Create a course"}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
 
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">Recent courses</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="eyebrow mb-1">Library</p>
+          <h2 className="font-display text-xl font-semibold text-foreground">
+            Recent courses
+          </h2>
+        </div>
         <Link
           to="/courses"
-          className="flex items-center gap-1 text-sm font-medium text-primary"
+          className="flex items-center gap-1 text-sm font-medium text-accent hover:underline"
         >
           View all <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
+
       {recent.length === 0 ? (
-        <Card className="border-none p-8 text-center">
-          <p className="font-semibold text-foreground">No courses yet</p>
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center">
+          <p className="font-display text-lg font-semibold text-foreground">
+            No courses yet
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Create your first course to get started.
           </p>
-          <Button asChild className="mt-4 rounded-full">
-            <Link to="/courses">Create a course</Link>
-          </Button>
-        </Card>
+          <Link
+            to="/courses"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            Create a course
+          </Link>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {recent.map((c) => (
-            <Link key={c.id} to="/courses">
-              <Card className="card-hover flex items-center gap-3 border-none bg-card p-4">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-muted text-xl">
-                  {c.emoji}
+            <Link
+              key={c.id}
+              to="/courses"
+              className="card-hover flex items-center gap-4 rounded-2xl border border-border bg-card p-5"
+            >
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-muted text-2xl">
+                {c.emoji}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-display text-lg font-semibold text-foreground">
+                  {c.name}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold text-foreground">{c.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {c.topics.length} topics
-                  </div>
+                <div className="text-xs text-muted-foreground">
+                  {c.topics.length} topics
                 </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Card>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Link>
           ))}
         </div>

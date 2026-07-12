@@ -12,11 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MistakesRouteImport } from './routes/mistakes'
+import { Route as MaterialsRouteImport } from './routes/materials'
+import { Route as GeneratorRouteImport } from './routes/generator'
+import { Route as FlashcardsRouteImport } from './routes/flashcards'
 import { Route as ExamsRouteImport } from './routes/exams'
 import { Route as CoursesRouteImport } from './routes/courses'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UploadExamCourseIdTopicIdRouteImport } from './routes/upload-exam.$courseId.$topicId'
 import { Route as GenerateNotesCourseIdTopicIdRouteImport } from './routes/generate-notes.$courseId.$topicId'
@@ -41,14 +49,44 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlannerRoute = PlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MistakesRoute = MistakesRouteImport.update({
   id: '/mistakes',
   path: '/mistakes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaterialsRoute = MaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneratorRoute = GeneratorRouteImport.update({
+  id: '/generator',
+  path: '/generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlashcardsRoute = FlashcardsRouteImport.update({
+  id: '/flashcards',
+  path: '/flashcards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExamsRoute = ExamsRouteImport.update({
@@ -61,9 +99,19 @@ const CoursesRoute = CoursesRouteImport.update({
   path: '/courses',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -102,9 +150,9 @@ const CoursesCourseIdTopicIdRoute = CoursesCourseIdTopicIdRouteImport.update({
 } as any)
 const NotesCourseIdTopicIdNoteIdRoute =
   NotesCourseIdTopicIdNoteIdRouteImport.update({
-    id: '/notes/$courseId/$topicId/$noteId',
-    path: '/notes/$courseId/$topicId/$noteId',
-    getParentRoute: () => rootRouteImport,
+    id: '/$courseId/$topicId/$noteId',
+    path: '/$courseId/$topicId/$noteId',
+    getParentRoute: () => NotesRoute,
   } as any)
 const ExamCourseIdTopicIdExamIdRoute =
   ExamCourseIdTopicIdExamIdRouteImport.update({
@@ -115,11 +163,19 @@ const ExamCourseIdTopicIdExamIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
+  '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/flashcards': typeof FlashcardsRoute
+  '/generator': typeof GeneratorRoute
+  '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/progress': typeof ProgressRoute
+  '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -133,11 +189,19 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
+  '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/flashcards': typeof FlashcardsRoute
+  '/generator': typeof GeneratorRoute
+  '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/progress': typeof ProgressRoute
+  '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -152,11 +216,19 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
+  '/calendar': typeof CalendarRoute
   '/courses': typeof CoursesRouteWithChildren
   '/exams': typeof ExamsRoute
+  '/flashcards': typeof FlashcardsRoute
+  '/generator': typeof GeneratorRoute
+  '/materials': typeof MaterialsRoute
   '/mistakes': typeof MistakesRoute
+  '/notes': typeof NotesRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/progress': typeof ProgressRoute
+  '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -172,11 +244,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assistant'
     | '/auth'
+    | '/calendar'
     | '/courses'
     | '/exams'
+    | '/flashcards'
+    | '/generator'
+    | '/materials'
     | '/mistakes'
+    | '/notes'
     | '/planner'
+    | '/progress'
+    | '/quiz'
     | '/settings'
     | '/sitemap.xml'
     | '/upload'
@@ -190,11 +270,19 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assistant'
     | '/auth'
+    | '/calendar'
     | '/courses'
     | '/exams'
+    | '/flashcards'
+    | '/generator'
+    | '/materials'
     | '/mistakes'
+    | '/notes'
     | '/planner'
+    | '/progress'
+    | '/quiz'
     | '/settings'
     | '/sitemap.xml'
     | '/upload'
@@ -208,11 +296,19 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/assistant'
     | '/auth'
+    | '/calendar'
     | '/courses'
     | '/exams'
+    | '/flashcards'
+    | '/generator'
+    | '/materials'
     | '/mistakes'
+    | '/notes'
     | '/planner'
+    | '/progress'
+    | '/quiz'
     | '/settings'
     | '/sitemap.xml'
     | '/upload'
@@ -227,11 +323,19 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
+  CalendarRoute: typeof CalendarRoute
   CoursesRoute: typeof CoursesRouteWithChildren
   ExamsRoute: typeof ExamsRoute
+  FlashcardsRoute: typeof FlashcardsRoute
+  GeneratorRoute: typeof GeneratorRoute
+  MaterialsRoute: typeof MaterialsRoute
   MistakesRoute: typeof MistakesRoute
+  NotesRoute: typeof NotesRouteWithChildren
   PlannerRoute: typeof PlannerRoute
+  ProgressRoute: typeof ProgressRoute
+  QuizRoute: typeof QuizRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
@@ -240,7 +344,6 @@ export interface RootRouteChildren {
   GenerateNotesCourseIdTopicIdRoute: typeof GenerateNotesCourseIdTopicIdRoute
   UploadExamCourseIdTopicIdRoute: typeof UploadExamCourseIdTopicIdRoute
   ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
-  NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -266,6 +369,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/planner': {
       id: '/planner'
       path: '/planner'
@@ -273,11 +390,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mistakes': {
       id: '/mistakes'
       path: '/mistakes'
       fullPath: '/mistakes'
       preLoaderRoute: typeof MistakesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/materials': {
+      id: '/materials'
+      path: '/materials'
+      fullPath: '/materials'
+      preLoaderRoute: typeof MaterialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generator': {
+      id: '/generator'
+      path: '/generator'
+      fullPath: '/generator'
+      preLoaderRoute: typeof GeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/flashcards': {
+      id: '/flashcards'
+      path: '/flashcards'
+      fullPath: '/flashcards'
+      preLoaderRoute: typeof FlashcardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exams': {
@@ -294,11 +439,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -345,10 +504,10 @@ declare module '@tanstack/react-router' {
     }
     '/notes/$courseId/$topicId/$noteId': {
       id: '/notes/$courseId/$topicId/$noteId'
-      path: '/notes/$courseId/$topicId/$noteId'
+      path: '/$courseId/$topicId/$noteId'
       fullPath: '/notes/$courseId/$topicId/$noteId'
       preLoaderRoute: typeof NotesCourseIdTopicIdNoteIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof NotesRoute
     }
     '/exam/$courseId/$topicId/$examId': {
       id: '/exam/$courseId/$topicId/$examId'
@@ -371,13 +530,31 @@ const CoursesRouteChildren: CoursesRouteChildren = {
 const CoursesRouteWithChildren =
   CoursesRoute._addFileChildren(CoursesRouteChildren)
 
+interface NotesRouteChildren {
+  NotesCourseIdTopicIdNoteIdRoute: typeof NotesCourseIdTopicIdNoteIdRoute
+}
+
+const NotesRouteChildren: NotesRouteChildren = {
+  NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
+}
+
+const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
+  CalendarRoute: CalendarRoute,
   CoursesRoute: CoursesRouteWithChildren,
   ExamsRoute: ExamsRoute,
+  FlashcardsRoute: FlashcardsRoute,
+  GeneratorRoute: GeneratorRoute,
+  MaterialsRoute: MaterialsRoute,
   MistakesRoute: MistakesRoute,
+  NotesRoute: NotesRouteWithChildren,
   PlannerRoute: PlannerRoute,
+  ProgressRoute: ProgressRoute,
+  QuizRoute: QuizRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
@@ -386,7 +563,6 @@ const rootRouteChildren: RootRouteChildren = {
   GenerateNotesCourseIdTopicIdRoute: GenerateNotesCourseIdTopicIdRoute,
   UploadExamCourseIdTopicIdRoute: UploadExamCourseIdTopicIdRoute,
   ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
-  NotesCourseIdTopicIdNoteIdRoute: NotesCourseIdTopicIdNoteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

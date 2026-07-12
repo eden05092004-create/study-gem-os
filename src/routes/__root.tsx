@@ -78,17 +78,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StudyOS — Medical Study Platform" },
+      { title: "StudyOS — Your calm study workspace" },
       {
         name: "description",
         content:
-          "StudyOS — manage courses, notes, exams and a mistake notebook in one place. A smart study platform for medical students.",
+          "StudyOS is a calm, all-in-one study workspace: courses, materials, notes, an AI tutor, question generator, quizzes, flashcards and a mistake notebook.",
       },
       { name: "author", content: "StudyOS" },
-      { property: "og:title", content: "StudyOS — Medical Study Platform" },
+      { property: "og:title", content: "StudyOS — Your calm study workspace" },
       {
         property: "og:description",
-        content: "Courses, notes, exams and a mistake notebook — all in one place.",
+        content: "Courses, materials, notes, AI tutor, quizzes, flashcards and a mistake notebook — all in one place.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -106,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],

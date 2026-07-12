@@ -136,6 +136,7 @@ export type NewQuestion = {
 
 type State = {
   userName: string;
+  userEmail: string;
   studyHoursToday: number;
   questionsSolved: number;
   nextExamDate: string;
@@ -323,6 +324,7 @@ async function loadAll() {
 
 export const useStore = create<State>((set, get) => ({
   userName: "",
+  userEmail: "",
   studyHoursToday: 0,
   questionsSolved: 0,
   nextExamDate: new Date(Date.now() + 6 * 86400000).toISOString(),
@@ -349,6 +351,7 @@ export const useStore = create<State>((set, get) => ({
     const loaded = await loadAll();
     set({
       userName: profile?.display_name ?? user.email?.split("@")[0] ?? "Student",
+      userEmail: user.email ?? "",
       ...loaded,
       loading: false,
       initialized: true,
@@ -358,6 +361,7 @@ export const useStore = create<State>((set, get) => ({
   reset: () =>
     set({
       userName: "",
+      userEmail: "",
       courses: [],
       mistakes: [],
       questionsSolved: 0,
