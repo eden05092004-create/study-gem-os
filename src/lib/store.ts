@@ -207,7 +207,7 @@ async function loadAll(userId: string) {
       examId: m.exam_id,
       question: questionMap.get(m.question_id)!,
       chosenIndex: m.chosen_index,
-      date: "היום",
+      date: "Today",
     }));
 
   return {
