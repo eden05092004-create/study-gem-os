@@ -138,7 +138,7 @@ function UploadPage() {
       {uploaded.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-success" /> הועלה זה עתה
+            <CheckCircle2 className="h-4 w-4 text-success" /> Just uploaded
           </h2>
           <div className="space-y-2">
             {uploaded.map((name, i) => (
@@ -154,23 +154,23 @@ function UploadPage() {
           <div className="mt-4 grid gap-2">
             <Button
               className="rounded-full"
-              onClick={() => toast("בקרוב: יצירת סיכום מהקובץ ✨")}
+              onClick={() => toast("Coming soon: generate notes from your file ✨")}
             >
-              <Sparkles className="h-4 w-4" /> צור סיכום
+              <Sparkles className="h-4 w-4" /> Generate notes
             </Button>
             <Button
               variant="secondary"
               className="rounded-full"
-              onClick={() => toast("בקרוב: יצירת מבחן מהקובץ ✨")}
+              onClick={() => toast("Coming soon: generate an exam from your file ✨")}
             >
-              <ClipboardList className="h-4 w-4" /> צור מבחן
+              <ClipboardList className="h-4 w-4" /> Generate exam
             </Button>
             <Button
               variant="outline"
               className="rounded-full"
-              onClick={() => toast("בקרוב: שאלו כל שאלה על החומר ✨")}
+              onClick={() => toast("Coming soon: ask anything about your material ✨")}
             >
-              <MessageCircleQuestion className="h-4 w-4" /> שאל כל דבר
+              <MessageCircleQuestion className="h-4 w-4" /> Ask anything
             </Button>
           </div>
         </div>
