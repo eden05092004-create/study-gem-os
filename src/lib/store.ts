@@ -851,4 +851,61 @@ export const useStore = create<State>((set, get) => ({
       ),
     }));
   },
+
+  addLectures: async (courseId, topicId, lectures) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (!user || lectures.length === 0) return;
+    const s = get();
+    const existing =
+      s.courses.find((c) => c.id === courseId)?.topics.find((t) => t.id === topicId)
+        ?.lectures.length ?? 0;
+    const rows = lectures.map((l, i) => ({
+      user_id: user.id,
+      course_id: courseId,
+      topic_id: topicId,
+      number: l.number,
+      name: l.name,
+      position: existing + i,
+    }));
+    const { data } = await supabase.from("lectures").insert(rows).select();
+    if (!data) return;
+    const added: Lecture[] = data.map((l) => ({
+      id: l.id,
+      number: l.number,
+      name: l.name,
+    }));
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, lectures: [...t.lectures, ...added] }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
+
+  deleteLecture: async (courseId, topicId, lectureId) => {
+    await supabase.from("lectures").delete().eq("id", lectureId);
+    set((st) => ({
+      courses: st.courses.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              topics: c.topics.map((t) =>
+                t.id === topicId
+                  ? { ...t, lectures: t.lectures.filter((l) => l.id !== lectureId) }
+                  : t,
+              ),
+            }
+          : c,
+      ),
+    }));
+  },
 }));
