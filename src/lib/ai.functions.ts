@@ -122,6 +122,137 @@ async function callAnthropic(
   };
 }
 
+export type AiNoteSection = {
+  key: string;
+  title: string;
+  icon: string;
+  body: string;
+};
+
+const notesSchema = {
+  type: "object" as const,
+  properties: {
+    title: { type: "string" },
+    sections: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          title: { type: "string" },
+          icon: { type: "string" },
+          body: { type: "string" },
+        },
+        required: ["key", "title", "icon", "body"],
+      },
+    },
+    coverage: { type: "string" },
+  },
+  required: ["title", "sections"],
+};
+
+async function callAnthropicNotes(
+  apiKey: string,
+  system: string,
+  content: ContentBlock[],
+): Promise<{ title: string; sections: AiNoteSection[]; coverage?: string }> {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 16000,
+      system,
+      tools: [
+        {
+          name: "save_notes",
+          description: "Save the generated textbook-style study notes.",
+          input_schema: notesSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: "save_notes" },
+      messages: [{ role: "user", content }],
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(
+      res.status === 401
+        ? "Invalid API key. Check your Anthropic key in Settings."
+        : `AI request failed (${res.status}): ${body.slice(0, 300)}`,
+    );
+  }
+
+  const json = (await res.json()) as {
+    content?: { type: string; input?: unknown }[];
+  };
+  const toolUse = json.content?.find((c) => c.type === "tool_use");
+  if (!toolUse?.input) throw new Error("The AI returned no notes.");
+  const out = toolUse.input as {
+    title?: string;
+    sections?: AiNoteSection[];
+    coverage?: string;
+  };
+  return {
+    title: out.title ?? "Study notes",
+    sections: out.sections ?? [],
+    coverage: out.coverage,
+  };
+}
+
+export const generateNotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { subject: string; detail: string }) => ({
+      subject: String(input.subject ?? "").slice(0, 2000),
+      detail: ["detailed", "balanced", "concise"].includes(input.detail)
+        ? input.detail
+        : "balanced",
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const key = await getKey(context.supabase, context.userId);
+    if (!key) throw new Error("AI features require an API key.");
+
+    const detailGuide =
+      data.detail === "detailed"
+        ? "Be exhaustive. Expand every point into thorough textbook-level prose. Long explanations."
+        : data.detail === "concise"
+          ? "Keep explanations tight and focused, but still complete — never drop a slide or page."
+          : "Balanced textbook depth: clear, complete explanations without excessive padding.";
+
+    const system = `You are an expert medical school professor writing professional, textbook-style study notes from lecture material.
+
+ABSOLUTE RULES:
+- ZERO OMISSION: every single slide / page / section of the source material MUST be represented in the notes. Do NOT drop anything as "unimportant" — professors test tiny details.
+- This is NOT a summary. Expand terse bullet points into full, flowing textbook-quality explanations. Teach the concept as a textbook chapter would.
+- Detail level: ${detailGuide}
+
+Return the notes via the save_notes tool with EXACTLY these sections in this order, using these exact keys, titles and icons:
+1. key "overview", title "Overview", icon "📌"
+2. key "full", title "Full Content", icon "📖" (use markdown-style headings and textbook-level explanations covering ALL material)
+3. key "tables", title "Comparison Tables", icon "📊" (create comparison tables where relevant; render as plain-text tables)
+4. key "highyield", title "High Yield", icon "⭐" (the points most likely to appear on the exam)
+5. key "clinical", title "Clinical Correlations", icon "🏥"
+6. key "mistakes", title "Common Mistakes", icon "⚠️"
+7. key "details", title "Small Details", icon "🔍" (exact numbers, exceptions, footnotes, specific values, named researchers — the easily-missed details)
+8. key "quickcheck", title "Quick Check", icon "❓" (3-4 self-test questions with answers)
+9. key "coverage", title "Coverage Check", icon "✅" (list which slides/pages/sections were covered, confirming nothing was omitted)
+
+Also fill "coverage" with the same coverage summary. Write the "body" of each section as readable text (paragraphs, headings, lists).`;
+    const prompt = `Source material to turn into complete textbook-style notes:\n${data.subject}\n\nProduce the full notes now, covering every slide/page with zero omission.`;
+
+    const out = await callAnthropicNotes(key, system, [
+      { type: "text", text: prompt },
+    ]);
+    return { title: out.title, sections: out.sections, coverage: out.coverage };
+  });
+
 export const getAiKeyStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
