@@ -55,16 +55,7 @@ const questionsSchema = {
   required: ["questions"],
 };
 
-async function getKey(supabase: {
-  from: (t: string) => {
-    select: (c: string) => {
-      eq: (
-        c: string,
-        v: string,
-      ) => { maybeSingle: () => Promise<{ data: { anthropic_api_key: string | null } | null }> };
-    };
-  };
-}, userId: string) {
+async function getKey(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
     .from("user_settings")
     .select("anthropic_api_key")
