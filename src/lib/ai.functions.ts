@@ -11,11 +11,24 @@ export type AiBlank = {
   correct: string;
 };
 
+export type AiImageLabel = { id: string; x: number; y: number };
+
 export type AiQuestion = {
-  type: "mcq" | "cloze" | "matching" | "truefalse" | "short";
+  type:
+    | "mcq"
+    | "cloze"
+    | "matching"
+    | "truefalse"
+    | "short"
+    | "image_identify"
+    | "image_matching"
+    | "image_clinical";
   text: string;
   blanks: AiBlank[];
   explanations?: string[];
+  /** index into the images array supplied to the model; resolved to a data URL client-side */
+  imageIndex?: number;
+  imageLabels?: AiImageLabel[];
 };
 
 const questionsSchema = {
@@ -28,7 +41,16 @@ const questionsSchema = {
         properties: {
           type: {
             type: "string",
-            enum: ["mcq", "cloze", "matching", "truefalse", "short"],
+            enum: [
+              "mcq",
+              "cloze",
+              "matching",
+              "truefalse",
+              "short",
+              "image_identify",
+              "image_matching",
+              "image_clinical",
+            ],
           },
           text: { type: "string" },
           blanks: {
@@ -45,6 +67,25 @@ const questionsSchema = {
             },
           },
           explanations: { type: "array", items: { type: "string" } },
+          imageIndex: {
+            type: "number",
+            description:
+              "0-based index of the source image this question uses (only for image_* types).",
+          },
+          imageLabels: {
+            type: "array",
+            description:
+              "Numbered markers to overlay on the image; id must match a blank id. x/y are normalized 0..1 coordinates.",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                x: { type: "number" },
+                y: { type: "number" },
+              },
+              required: ["id", "x", "y"],
+            },
+          },
         },
         required: ["type", "text", "blanks"],
       },
