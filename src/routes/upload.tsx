@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
   UploadCloud,
@@ -35,6 +35,7 @@ function detectKind(name: string): FileItem["kind"] {
 }
 
 function UploadPage() {
+  const navigate = useNavigate();
   const { courses, addFile } = useStore();
   const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
   const selectedCourse = courses.find((c) => c.id === courseId);
@@ -154,7 +155,16 @@ function UploadPage() {
           <div className="mt-4 grid gap-2">
             <Button
               className="rounded-full"
-              onClick={() => toast("Coming soon: generate notes from your file ✨")}
+              onClick={() => {
+                if (!courseId || !topicId) {
+                  toast("Select a course and topic first");
+                  return;
+                }
+                navigate({
+                  to: "/generate-notes/$courseId/$topicId",
+                  params: { courseId, topicId },
+                });
+              }}
             >
               <Sparkles className="h-4 w-4" /> Generate notes
             </Button>

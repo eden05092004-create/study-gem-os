@@ -129,7 +129,12 @@ function TopicDetail() {
           <Button
             variant="outline"
             className="w-full rounded-full"
-            onClick={() => toast("Coming soon: auto-generate notes from a file ✨")}
+            onClick={() =>
+              navigate({
+                to: "/generate-notes/$courseId/$topicId",
+                params: { courseId, topicId },
+              })
+            }
           >
             <Sparkles className="h-4 w-4" /> Generate notes (AI)
           </Button>
