@@ -4,7 +4,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Sparkles,
-  ArrowLeft,
+  ArrowRight,
   LogOut,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
