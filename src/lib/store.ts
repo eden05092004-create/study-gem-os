@@ -474,7 +474,7 @@ export const useStore = create<State>((set, get) => ({
               ...c,
               topics: [
                 ...c.topics,
-                { id: data.id, name: data.name, files: [], notes: [], exams: [] },
+                { id: data.id, name: data.name, files: [], notes: [], exams: [], lectures: [] },
               ],
             }
           : c,
