@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarRange,
@@ -8,12 +8,19 @@ import {
   Trash2,
   Plus,
   GraduationCap,
+  Flame,
+  Play,
+  Sun,
+  Zap,
+  AlarmClock,
+  X,
 } from "lucide-react";
 import { AppShell, PageTitle } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -26,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
+import { parseLectures } from "@/lib/lectures";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/planner")({
@@ -34,15 +42,20 @@ export const Route = createFileRoute("/planner")({
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const REVIEW_GAP_DAYS = 3;
+const REVIEW_GAP_DAYS_2 = 7;
 const LECTURE_MINUTES = 45; // estimated time per lecture
+const PREEXAM_WINDOW = 3;
 
 type PlanItem = {
   id: string;
-  lectureId: string;
   number: string;
   name: string;
+  topicName?: string;
   type: "study" | "review";
   done: boolean;
+  hard?: boolean;
+  /** id of the study item that spawned this review (avoids duplicates) */
+  sourceId?: string;
 };
 
 type PlanSession = {
@@ -78,9 +91,25 @@ function parseKey(k: string) {
   return new Date(y, m - 1, d);
 }
 
+function todayKey() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return toKey(d);
+}
+
+function addDaysKey(k: string, n: number) {
+  const d = parseKey(k);
+  d.setDate(d.getDate() + n);
+  return toKey(d);
+}
+
 function formatPlanDate(k: string) {
   const d = parseKey(k);
   return `${WEEKDAYS[d.getDay()]} · ${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function rid() {
+  return Math.random().toString(36).slice(2, 10);
 }
 
 /** Insert plan items into a day, grouping them into per-course sessions. */
@@ -101,23 +130,17 @@ function mergeItems(
     session = { courseId: course.id, courseName: course.name, emoji: course.emoji, items: [] };
     day.sessions.push(session);
   }
-  // avoid duplicate study items for the same lecture
-  for (const it of items) {
-    const exists = session.items.some(
-      (x) => x.lectureId === it.lectureId && x.type === it.type,
-    );
-    if (!exists) session.items.push(it);
-  }
+  for (const it of items) session.items.push(it);
   next.sort((a, b) => a.date.localeCompare(b.date));
   return next.filter((d) => d.sessions.some((s) => s.items.length > 0));
 }
 
 function newItem(l: LectureRef, type: "study" | "review"): PlanItem {
   return {
-    id: `${l.lectureId}-${type}-${Math.random().toString(36).slice(2, 8)}`,
-    lectureId: l.lectureId,
+    id: rid(),
     number: l.number,
     name: l.name,
+    topicName: l.topicName,
     type,
     done: false,
   };
@@ -133,7 +156,7 @@ function generatePlan(
   today.setHours(0, 0, 0, 0);
   const exam = parseKey(examDateKey);
 
-  const dayCapacity = new Map<string, number>(); // remaining minutes
+  const dayCapacity = new Map<string, number>();
   const dayKeys: string[] = [];
   for (let d = new Date(today); d <= exam; d.setDate(d.getDate() + 1)) {
     const mins = (weeklyHours[d.getDay()] ?? 0) * 60;
@@ -150,21 +173,18 @@ function generatePlan(
 
   const findDay = (minKey?: string) =>
     dayKeys.find(
-      (k) =>
-        (dayCapacity.get(k) ?? 0) >= LECTURE_MINUTES &&
-        (!minKey || k >= minKey),
+      (k) => (dayCapacity.get(k) ?? 0) >= LECTURE_MINUTES && (!minKey || k >= minKey),
     );
 
   const courseOf = (l: LectureRef) => ({ id: l.courseId, name: l.courseName, emoji: l.emoji });
 
   for (const l of lectures) {
     const key = findDay();
-    if (!key) continue; // no capacity — remains unscheduled (reported)
+    if (!key) continue;
     scheduled++;
     dayCapacity.set(key, (dayCapacity.get(key) ?? 0) - LECTURE_MINUTES);
     days = mergeItems(days, key, courseOf(l), [newItem(l, "study")]);
 
-    // schedule a review REVIEW_GAP_DAYS later, if capacity allows
     const target = new Date(parseKey(key));
     target.setDate(target.getDate() + REVIEW_GAP_DAYS);
     const reviewKey = findDay(toKey(target));
@@ -177,8 +197,17 @@ function generatePlan(
   return { days, scheduled };
 }
 
+type ManualCourseRow = {
+  key: string;
+  courseId: string;
+  topicName: string;
+  lecturesText: string;
+};
+
 function Planner() {
   const courses = useStore((s) => s.courses);
+  const mistakes = useStore((s) => s.mistakes);
+  const navigate = useNavigate();
 
   const lectureRefs = useMemo<LectureRef[]>(
     () =>
@@ -209,11 +238,12 @@ function Planner() {
   });
   const [autoOpen, setAutoOpen] = useState(false);
 
-  // manual form
+  // manual form (free text)
   const [manualOpen, setManualOpen] = useState(false);
   const [manualDate, setManualDate] = useState("");
-  const [manualCourse, setManualCourse] = useState("");
-  const [manualLectures, setManualLectures] = useState<string[]>([]);
+  const [manualRows, setManualRows] = useState<ManualCourseRow[]>([
+    { key: rid(), courseId: "", topicName: "", lecturesText: "" },
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -234,14 +264,14 @@ function Planner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const persist = async (nextDays: PlanDay[], lectureIds = selectedLectures) => {
+  const persist = async (nextDays: PlanDay[], lectureIds = selectedLectures, exam = examDate) => {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (!user) return;
     await supabase.from("study_plans").upsert(
       {
         user_id: user.id,
-        exam_date: examDate || new Date().toISOString().slice(0, 10),
+        exam_date: exam || new Date().toISOString().slice(0, 10),
         topic_ids: lectureIds,
         weekly_hours: weeklyHours,
         days: nextDays,
@@ -252,9 +282,6 @@ function Planner() {
 
   const toggleLecture = (id: string) =>
     setSelectedLectures((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-
-  const toggleManualLecture = (id: string) =>
-    setManualLectures((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const handleAuto = async () => {
     if (!examDate) return toast.error("Choose an exam date");
@@ -277,28 +304,126 @@ function Planner() {
     }
   };
 
+  // ---- manual (free text) ----
+  const updateRow = (key: string, patch: Partial<ManualCourseRow>) =>
+    setManualRows((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+
+  const addRow = () =>
+    setManualRows((rows) => [
+      ...rows,
+      { key: rid(), courseId: "", topicName: "", lecturesText: "" },
+    ]);
+
+  const removeRow = (key: string) =>
+    setManualRows((rows) => (rows.length > 1 ? rows.filter((r) => r.key !== key) : rows));
+
+  const resetManual = () => {
+    setManualRows([{ key: rid(), courseId: "", topicName: "", lecturesText: "" }]);
+    setManualDate("");
+  };
+
   const handleManualAdd = async () => {
     if (!manualDate) return toast.error("Pick a date");
-    if (!manualCourse) return toast.error("Pick a course");
-    if (manualLectures.length === 0) return toast.error("Pick at least one lecture");
-    const course = courses.find((c) => c.id === manualCourse)!;
-    const refs = lectureRefs.filter(
-      (l) => l.courseId === manualCourse && manualLectures.includes(l.lectureId),
-    );
-    const next = mergeItems(
-      days,
-      manualDate,
-      { id: course.id, name: course.name, emoji: course.emoji },
-      refs.map((l) => newItem(l, "study")),
-    );
+    const filled = manualRows.filter((r) => r.courseId && r.lecturesText.trim());
+    if (filled.length === 0)
+      return toast.error("Add at least one course with lectures");
+
+    let next = days;
+    let total = 0;
+    for (const row of filled) {
+      const course = courses.find((c) => c.id === row.courseId);
+      if (!course) continue;
+      const parsed = parseLectures(row.lecturesText);
+      if (parsed.length === 0) continue;
+      const items: PlanItem[] = parsed.map((p) => ({
+        id: rid(),
+        number: p.number,
+        name: p.name,
+        topicName: row.topicName.trim() || undefined,
+        type: "study",
+        done: false,
+      }));
+      total += items.length;
+      next = mergeItems(
+        next,
+        manualDate,
+        { id: course.id, name: course.name, emoji: course.emoji },
+        items,
+      );
+    }
+    if (total === 0) return toast.error("No lectures found in the text");
     setDays(next);
     await persist(next);
-    setManualLectures([]);
+    resetManual();
     setManualOpen(false);
-    toast.success("Session added");
+    toast.success(`${total} lecture${total > 1 ? "s" : ""} added`);
+  };
+
+  // ---- spaced review on completion ----
+  const addSpacedReviews = (
+    base: PlanDay[],
+    date: string,
+    session: PlanSession,
+    item: PlanItem,
+  ): PlanDay[] => {
+    let next = base;
+    for (const gap of [REVIEW_GAP_DAYS, REVIEW_GAP_DAYS_2]) {
+      const reviewDate = addDaysKey(date, gap);
+      const already = next
+        .find((d) => d.date === reviewDate)
+        ?.sessions.find((s) => s.courseId === session.courseId)
+        ?.items.some((x) => x.sourceId === item.id);
+      if (already) continue;
+      next = mergeItems(
+        next,
+        reviewDate,
+        { id: session.courseId, name: session.courseName, emoji: session.emoji },
+        [
+          {
+            id: rid(),
+            number: item.number,
+            name: item.name,
+            topicName: item.topicName,
+            type: "review",
+            done: false,
+            hard: item.hard,
+            sourceId: item.id,
+          },
+        ],
+      );
+    }
+    return next;
   };
 
   const toggleItem = async (date: string, itemId: string) => {
+    const reviewTargets: { session: PlanSession; item: PlanItem }[] = [];
+    let next = days.map((d) =>
+      d.date === date
+        ? {
+            ...d,
+            sessions: d.sessions.map((s) => ({
+              ...s,
+              items: s.items.map((it) => {
+                if (it.id !== itemId) return it;
+                const updated = { ...it, done: !it.done };
+                if (updated.done && it.type === "study") {
+                  reviewTargets.push({ session: s, item: updated });
+                }
+                return updated;
+              }),
+            })),
+          }
+        : d,
+    );
+    for (const t of reviewTargets) {
+      next = addSpacedReviews(next, date, t.session, t.item);
+    }
+    setDays(next);
+    await persist(next);
+  };
+
+
+  const toggleHard = async (date: string, itemId: string) => {
     const next = days.map((d) =>
       d.date === date
         ? {
@@ -306,7 +431,7 @@ function Planner() {
             sessions: d.sessions.map((s) => ({
               ...s,
               items: s.items.map((it) =>
-                it.id === itemId ? { ...it, done: !it.done } : it,
+                it.id === itemId ? { ...it, hard: !it.hard } : it,
               ),
             })),
           }
@@ -336,22 +461,145 @@ function Planner() {
     toast.success("Plan cleared");
   };
 
+  // ---- auto reschedule missed ----
+  const tKey = todayKey();
+
+  const missedEntries = useMemo(() => {
+    const out: { course: { id: string; name: string; emoji: string }; item: PlanItem }[] = [];
+    for (const d of days) {
+      if (d.date >= tKey) continue;
+      for (const s of d.sessions) {
+        for (const it of s.items) {
+          if (!it.done) {
+            out.push({
+              course: { id: s.courseId, name: s.courseName, emoji: s.emoji },
+              item: it,
+            });
+          }
+        }
+      }
+    }
+    return out;
+  }, [days, tKey]);
+
+  const redistributeMissed = async () => {
+    if (missedEntries.length === 0) return;
+    // remove missed (undone, past) items
+    let next = days.map((d) =>
+      d.date < tKey
+        ? {
+            ...d,
+            sessions: d.sessions.map((s) => ({
+              ...s,
+              items: s.items.filter((it) => it.done),
+            })),
+          }
+        : d,
+    );
+    next = next
+      .map((d) => ({ ...d, sessions: d.sessions.filter((s) => s.items.length > 0) }))
+      .filter((d) => d.sessions.length > 0);
+
+    // target days: today..exam (or next N days if no exam)
+    const targets: string[] = [];
+    if (examDate && examDate >= tKey) {
+      for (let k = tKey; k <= examDate; k = addDaysKey(k, 1)) targets.push(k);
+    } else {
+      for (let i = 0; i < missedEntries.length; i++) targets.push(addDaysKey(tKey, i));
+    }
+
+    missedEntries.forEach((entry, i) => {
+      const date = targets[i % targets.length];
+      next = mergeItems(next, date, entry.course, [{ ...entry.item, id: rid() }]);
+    });
+
+    setDays(next);
+    await persist(next);
+    toast.success(`Rescheduled ${missedEntries.length} missed lecture${missedEntries.length > 1 ? "s" : ""}`);
+  };
+
+  // ---- progress ----
   const allItems = days.flatMap((d) => d.sessions.flatMap((s) => s.items));
   const totalItems = allItems.length;
   const doneItems = allItems.filter((i) => i.done).length;
   const progress = totalItems ? Math.round((doneItems / totalItems) * 100) : 0;
 
-  const manualCourseLectures = lectureRefs.filter((l) => l.courseId === manualCourse);
+  const daysLeft = examDate
+    ? Math.max(0, Math.round((parseKey(examDate).getTime() - parseKey(tKey).getTime()) / 86400000))
+    : null;
+  const perDayNeeded =
+    daysLeft && daysLeft > 0 ? Math.ceil((totalItems - doneItems) / daysLeft) : totalItems - doneItems;
+
+  const preExam = daysLeft !== null && daysLeft <= PREEXAM_WINDOW && daysLeft >= 0 && totalItems > 0;
+
+  const todayDay = days.find((d) => d.date === tKey);
+  const todayItems = todayDay?.sessions.flatMap((s) => s.items) ?? [];
+
+  const hardItems = allItems.filter((i) => i.hard);
+
+  // ---- reusable item row ----
+  const ItemRow = ({ date, session, it }: { date: string; session: PlanSession; it: PlanItem }) => (
+    <div className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2.5">
+      <button
+        onClick={() => toggleItem(date, it.id)}
+        className="flex flex-1 items-center gap-3 text-left"
+      >
+        {it.done ? (
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+        ) : (
+          <Circle className="h-5 w-5 shrink-0 text-muted-foreground" />
+        )}
+        <span className="flex-1">
+          <span
+            className={`block text-sm font-medium ${
+              it.done ? "text-muted-foreground line-through" : "text-foreground"
+            }`}
+          >
+            {it.number && <span className="font-mono">{it.number} – </span>}
+            {it.name}
+            {it.topicName && (
+              <span className="ml-1 text-xs text-muted-foreground">· {it.topicName}</span>
+            )}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {it.type === "review" ? "🔁 Review" : "📖 Study"}
+          </span>
+        </span>
+      </button>
+      <button
+        onClick={() => toggleHard(date, it.id)}
+        aria-label="Mark as hard"
+        title="Hard for me"
+        className={it.hard ? "text-destructive" : "text-muted-foreground hover:text-destructive"}
+      >
+        <Flame className="h-4 w-4" fill={it.hard ? "currentColor" : "none"} />
+      </button>
+      <button
+        onClick={() => navigate({ to: "/quiz" })}
+        aria-label="Practice"
+        title="Practice this"
+        className="text-muted-foreground hover:text-primary"
+      >
+        <Play className="h-4 w-4" />
+      </button>
+    </div>
+  );
 
   return (
     <AppShell>
       <PageTitle
         title="Study planner"
-        subtitle="Build your schedule by date and lecture — manually or automatically"
+        subtitle="Build your schedule by date and lecture — write, track, and review"
         action={
           <div className="flex gap-2">
-            {/* Manual session dialog */}
-            <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+            {/* Manual free-text session dialog */}
+            <Dialog
+              open={manualOpen}
+              onOpenChange={(o) => {
+                setManualOpen(o);
+                if (!o) resetManual();
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="rounded-full">
                   <Plus className="h-4 w-4" /> Session
@@ -371,56 +619,56 @@ function Planner() {
                       className="rounded-xl"
                     />
                   </div>
-                  <div>
-                    <Label className="mb-1.5 block text-sm">Course / subject</Label>
-                    <select
-                      value={manualCourse}
-                      onChange={(e) => {
-                        setManualCourse(e.target.value);
-                        setManualLectures([]);
-                      }}
-                      className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Choose a course…</option>
-                      {courses.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.emoji} {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {manualCourse && (
-                    <div>
-                      <Label className="mb-1.5 block text-sm">Lectures</Label>
-                      {manualCourseLectures.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">
-                          No lectures in this course yet.
-                        </p>
-                      ) : (
-                        <div className="max-h-56 space-y-1.5 overflow-y-auto">
-                          {manualCourseLectures.map((l) => (
-                            <label
-                              key={l.lectureId}
-                              className="flex cursor-pointer items-center gap-2.5 rounded-lg bg-muted/40 px-3 py-2"
-                            >
-                              <Checkbox
-                                checked={manualLectures.includes(l.lectureId)}
-                                onCheckedChange={() => toggleManualLecture(l.lectureId)}
-                              />
-                              <span className="text-sm text-foreground">
-                                {l.number && (
-                                  <span className="font-mono font-semibold">
-                                    {l.number}
-                                  </span>
-                                )}{" "}
-                                {l.name}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
+
+                  {manualRows.map((row, idx) => (
+                    <div key={row.key} className="space-y-2 rounded-xl border border-border p-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-bold">Course {idx + 1}</Label>
+                        {manualRows.length > 1 && (
+                          <button
+                            onClick={() => removeRow(row.key)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Remove course"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        value={row.courseId}
+                        onChange={(e) => updateRow(row.key, { courseId: e.target.value })}
+                        className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Choose a course…</option>
+                        {courses.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.emoji} {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        value={row.topicName}
+                        onChange={(e) => updateRow(row.key, { topicName: e.target.value })}
+                        placeholder="Topic (optional)"
+                        className="rounded-xl"
+                      />
+                      <Textarea
+                        value={row.lecturesText}
+                        onChange={(e) => updateRow(row.key, { lecturesText: e.target.value })}
+                        placeholder={"Type or paste lectures, one per line:\n1010 – Protein Functions\n1039 – Methods of Protein Analysis I"}
+                        className="min-h-28 rounded-xl font-mono text-sm"
+                      />
                     </div>
-                  )}
+                  ))}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-full"
+                    onClick={addRow}
+                  >
+                    <Plus className="h-4 w-4" /> Add another course
+                  </Button>
                 </div>
                 <DialogFooter>
                   <Button className="rounded-full" onClick={handleManualAdd}>
@@ -456,8 +704,8 @@ function Planner() {
 
                   <div>
                     <Label className="mb-2 flex items-center gap-2 text-sm font-bold">
-                      <GraduationCap className="h-4 w-4 text-primary" /> Lectures to
-                      cover ({selectedLectures.length})
+                      <GraduationCap className="h-4 w-4 text-primary" /> Lectures to cover (
+                      {selectedLectures.length})
                     </Label>
                     {lectureRefs.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
@@ -554,20 +802,115 @@ function Planner() {
           <GraduationCap className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="font-semibold text-foreground">No study plan yet</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-            Add a session manually, or use Auto plan to schedule your selected
-            lectures with automatic reviews.
+            Add a session and write your lectures, or use Auto plan to schedule them with
+            automatic reviews.
           </p>
         </Card>
       ) : (
         <div className="space-y-5">
+          {/* Today view */}
+          <Card className="border-none bg-primary/5 p-5 ring-1 ring-primary/20">
+            <div className="mb-3 flex items-center gap-2">
+              <Sun className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Today · {formatPlanDate(tKey)}</h3>
+            </div>
+            {todayItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing scheduled for today 🎉</p>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {todayDay!.sessions.map((s) => (
+                    <div key={s.courseId}>
+                      <p className="mb-1.5 text-xs font-bold text-muted-foreground">
+                        {s.emoji} {s.courseName}
+                      </p>
+                      <div className="space-y-2">
+                        {s.items.map((it) => (
+                          <ItemRow key={it.id} date={tKey} session={s} it={it} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  className="mt-4 w-full rounded-full"
+                  onClick={() => navigate({ to: "/quiz" })}
+                >
+                  <Play className="h-4 w-4" /> Start studying
+                </Button>
+              </>
+            )}
+          </Card>
+
+          {/* Pre-exam mode */}
+          {preExam && (
+            <Card className="border-none bg-accent/10 p-5 ring-1 ring-accent/40">
+              <div className="mb-2 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-accent" />
+                <h3 className="text-sm font-bold text-foreground">
+                  ⚡ Pre-exam mode — final review
+                </h3>
+              </div>
+              <p className="mb-3 text-sm text-muted-foreground">
+                {daysLeft === 0 ? "Exam is today" : `${daysLeft} day${daysLeft! > 1 ? "s" : ""} left`}{" "}
+                — no new lectures. Focus on hard topics, past mistakes, and a full practice exam.
+              </p>
+              <div className="space-y-1.5 text-sm text-foreground">
+                <p>🔥 {hardItems.length} lecture{hardItems.length !== 1 ? "s" : ""} flagged hard</p>
+                <p>❌ {mistakes.length} mistake{mistakes.length !== 1 ? "s" : ""} to review</p>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1 rounded-full" onClick={() => navigate({ to: "/quiz" })}>
+                  <Play className="h-4 w-4" /> Practice exam
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-full"
+                  onClick={() => navigate({ to: "/mistakes" })}
+                >
+                  Review mistakes
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Missed / reschedule */}
+          {missedEntries.length > 0 && (
+            <Card className="border-none bg-destructive/5 p-4 ring-1 ring-destructive/20">
+              <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <AlarmClock className="h-4 w-4 text-destructive" />
+                {missedEntries.length} lecture{missedEntries.length > 1 ? "s" : ""} missed
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Redistribute them across the remaining days before your exam.
+              </p>
+              <Button
+                size="sm"
+                className="mt-3 w-full rounded-full"
+                onClick={redistributeMissed}
+              >
+                Reschedule missed lectures
+              </Button>
+            </Card>
+          )}
+
+          {/* Progress */}
           <Card className="border-none p-4">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">
-                Progress — {doneItems}/{totalItems}
+                {doneItems} of {totalItems} lectures done ({progress}%)
               </p>
               <span className="text-sm font-bold text-primary">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2" />
+            <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+              {daysLeft !== null && (
+                <span>📅 {daysLeft} day{daysLeft !== 1 ? "s" : ""} until exam</span>
+              )}
+              {totalItems - doneItems > 0 && daysLeft && daysLeft > 0 && (
+                <span>🎯 {perDayNeeded}/day to keep up</span>
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -578,6 +921,7 @@ function Planner() {
             </Button>
           </Card>
 
+          {/* Full plan by date */}
           <div className="space-y-3">
             {days.map((day) => {
               const dayItems = day.sessions.flatMap((s) => s.items);
@@ -585,7 +929,9 @@ function Planner() {
               return (
                 <Card
                   key={day.date}
-                  className={`border-none p-4 ${allDone ? "opacity-70" : ""}`}
+                  className={`border-none p-4 ${allDone ? "opacity-70" : ""} ${
+                    day.date === tKey ? "ring-1 ring-primary/30" : ""
+                  }`}
                 >
                   <h3 className="mb-3 text-sm font-bold text-foreground">
                     {formatPlanDate(day.date)}
@@ -607,34 +953,7 @@ function Planner() {
                         </div>
                         <div className="space-y-2">
                           {s.items.map((it) => (
-                            <button
-                              key={it.id}
-                              onClick={() => toggleItem(day.date, it.id)}
-                              className="flex w-full items-center gap-3 rounded-xl bg-muted/40 px-3 py-2.5 text-left"
-                            >
-                              {it.done ? (
-                                <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
-                              ) : (
-                                <Circle className="h-5 w-5 shrink-0 text-muted-foreground" />
-                              )}
-                              <span className="flex-1">
-                                <span
-                                  className={`block text-sm font-medium ${
-                                    it.done
-                                      ? "text-muted-foreground line-through"
-                                      : "text-foreground"
-                                  }`}
-                                >
-                                  {it.number && (
-                                    <span className="font-mono">{it.number} – </span>
-                                  )}
-                                  {it.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {it.type === "review" ? "🔁 Review" : "📖 Study"}
-                                </span>
-                              </span>
-                            </button>
+                            <ItemRow key={it.id} date={day.date} session={s} it={it} />
                           ))}
                         </div>
                       </div>
