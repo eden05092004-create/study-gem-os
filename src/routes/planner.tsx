@@ -396,7 +396,7 @@ function Planner() {
   };
 
   const toggleItem = async (date: string, itemId: string) => {
-    let toReview: { session: PlanSession; item: PlanItem } | null = null;
+    const reviewTargets: { session: PlanSession; item: PlanItem }[] = [];
     let next = days.map((d) =>
       d.date === date
         ? {
@@ -407,7 +407,7 @@ function Planner() {
                 if (it.id !== itemId) return it;
                 const updated = { ...it, done: !it.done };
                 if (updated.done && it.type === "study") {
-                  toReview = { session: s, item: updated };
+                  reviewTargets.push({ session: s, item: updated });
                 }
                 return updated;
               }),
@@ -415,12 +415,13 @@ function Planner() {
           }
         : d,
     );
-    if (toReview) {
-      next = addSpacedReviews(next, date, toReview.session, toReview.item);
+    for (const t of reviewTargets) {
+      next = addSpacedReviews(next, date, t.session, t.item);
     }
     setDays(next);
     await persist(next);
   };
+
 
   const toggleHard = async (date: string, itemId: string) => {
     const next = days.map((d) =>
