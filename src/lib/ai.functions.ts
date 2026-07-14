@@ -479,7 +479,7 @@ export const parseOldExam = createServerFn({ method: "POST" })
 
 5. PARTIAL CREDIT: each blank counts as 1 point, so include every blank in a passage.
 
-6. Other formats: use "matching" (one blank per item, label = item, options = 4–8 candidate descriptions including exactly one correct), "truefalse" (one blank per statement, label = statement, options ["True","False"]), "short" only when the original exam truly requires typed free text, or "mcq" only for a standalone single-answer multiple-choice question (one blank, options = 4–8 choices including exactly one correct).
+6. Other formats: use "matching" (one blank per item, label = item, options = 4–8 candidate descriptions including exactly one correct), "truefalse" only when the original exam is explicitly a true/false table (one blank per statement, label = statement, correct = the exact answer text; options must still be expanded to 4–8 if the blank is rendered as a dropdown), "short" only when the original exam truly requires typed free text, or "mcq" only for a standalone single-answer multiple-choice question (one blank, options = 4–8 choices including exactly one correct).
 
 7. IMAGES: if a question refers to a figure/diagram shown in the material, KEEP the image. After the document, page images are supplied in order starting at index 0. Set imageIndex to the index of the page image that contains the figure for that question, and keep the question's normal type/blanks. When the original question asks to identify numbered structures on the figure, use type "image_identify" and supply imageLabels (id must match the blank id, x/y normalized 0..1). Never invent images that are not in the source.
 
