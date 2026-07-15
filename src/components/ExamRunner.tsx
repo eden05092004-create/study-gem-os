@@ -42,7 +42,7 @@ function BlankSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <Select value={value ?? ""} onValueChange={onChange}>
+    <Select value={value || undefined} onValueChange={onChange}>
       <SelectTrigger
         className="inline-flex h-auto min-h-9 w-auto min-w-[8rem] max-w-full items-start whitespace-normal rounded-lg border border-input bg-background px-2.5 py-1.5 text-left text-sm font-medium text-foreground [&>span]:whitespace-normal [&>span]:break-words [&>span]:line-clamp-none"
       >
