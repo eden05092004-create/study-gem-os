@@ -787,10 +787,29 @@ export const useStore = create<State>((set, get) => ({
   },
 
   deleteExam: async (courseId, topicId, examId) => {
-    await supabase.from("mistakes").delete().eq("exam_id", examId);
-    await supabase.from("answers").delete().eq("exam_id", examId);
-    await supabase.from("questions").delete().eq("exam_id", examId);
-    await supabase.from("exams").delete().eq("id", examId);
+    // Cascades (mistakes → questions → answers) are set at the DB level, but we
+    // still delete children explicitly so a partial FK failure surfaces here
+    // instead of silently leaving the exam behind (which caused deleted exams
+    // to "come back" on refresh).
+    const steps = await Promise.all([
+      supabase.from("mistakes").delete().eq("exam_id", examId),
+      supabase.from("answers").delete().eq("exam_id", examId),
+      supabase.from("questions").delete().eq("exam_id", examId),
+    ]);
+    for (const s of steps) {
+      if (s.error) throw new Error(`Failed to delete exam: ${s.error.message}`);
+    }
+    const { data: deleted, error: examErr } = await supabase
+      .from("exams")
+      .delete()
+      .eq("id", examId)
+      .select("id");
+    if (examErr) throw new Error(`Failed to delete exam: ${examErr.message}`);
+    if (!deleted || deleted.length === 0) {
+      throw new Error(
+        "Exam was not deleted (permission denied). Please sign out and back in.",
+      );
+    }
     set((st) => ({
       courses: st.courses.map((c) =>
         c.id === courseId
