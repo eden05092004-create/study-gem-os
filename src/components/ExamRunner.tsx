@@ -21,12 +21,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type Phase = "quiz" | "results";
-
-const selectClass =
-  "inline-block min-w-[7rem] rounded-lg border border-input bg-background px-2.5 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
 
 function BlankSelect({
   blank,
@@ -38,20 +42,27 @@ function BlankSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <select
-      className={selectClass}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="" disabled>
-        —
-      </option>
-      {blank.options.map((opt, i) => (
-        <option key={i} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger
+        className="inline-flex h-auto min-h-9 w-auto min-w-[8rem] max-w-full items-start whitespace-normal rounded-lg border border-input bg-background px-2.5 py-1.5 text-left text-sm font-medium text-foreground [&>span]:whitespace-normal [&>span]:break-words [&>span]:line-clamp-none"
+      >
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent
+        position="popper"
+        className="max-h-[60vh] w-[min(92vw,28rem)] max-w-[92vw] overflow-y-auto"
+      >
+        {blank.options.map((opt, i) => (
+          <SelectItem
+            key={i}
+            value={opt}
+            className="whitespace-normal break-words py-2 pr-2 text-sm leading-snug"
+          >
+            {opt}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
