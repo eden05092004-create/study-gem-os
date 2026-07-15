@@ -80,8 +80,12 @@ const SelectContent = React.forwardRef<
       <SelectPrimitive.Viewport
         className={cn(
           "p-1",
-          position === "popper" &&
-            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
+          // Intentionally no fixed height here: `--radix-select-trigger-height` is the
+          // *trigger's* height, not the list's — forcing the viewport to that value
+          // squeezes every option list down to a single row and forces scrolling for
+          // every extra item. Let it size to its content instead; SelectContent above
+          // already caps growth at the available on-screen space and scrolls past that.
+          position === "popper" && "w-full min-w-[var(--radix-select-trigger-width)]",
         )}
       >
         {children}

@@ -15,6 +15,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/", label: "Dashboard", icon: LayoutGrid, exact: true },
       { to: "/courses", label: "Courses", icon: BookOpen },
       { to: "/planner", label: "Study Planner", icon: CalendarRange },
+      { to: "/smart-scheduler", label: "Smart Scheduler", icon: Wand2 },
       { to: "/calendar", label: "Calendar", icon: CalendarDays },
     ],
   },

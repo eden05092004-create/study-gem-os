@@ -7,6 +7,10 @@ export type FileItem = {
   kind: "pdf" | "ppt" | "word" | "image";
   size: string;
   addedAt: string;
+  /** Path within the "materials" Storage bucket; undefined for files uploaded before storage existed. */
+  storagePath?: string;
+  mimeType?: string;
+  lectureId?: string;
 };
 
 export type NoteSection = {
@@ -42,6 +46,8 @@ export type Blank = {
   options: string[];
   /** correct option value, or the accepted answer for short answer */
   correct: string;
+  /** one explanation per option (same order as options[]) — why each is right or wrong */
+  explanations?: string[];
 };
 
 /** A numbered marker overlaid on a question image (coords normalized 0..1) */
@@ -72,6 +78,18 @@ export type Exam = {
   questions: Question[];
 };
 
+/** A trashed exam, with enough course/topic context to display and restore it. */
+export type TrashedExam = {
+  exam: Exam;
+  courseId: string;
+  courseName: string;
+  topicId: string;
+  topicName: string;
+  deletedAt: string;
+};
+
+export const TRASH_RETENTION_DAYS = 30;
+
 export type Lecture = {
   id: string;
   number: string;
@@ -93,6 +111,16 @@ export type Course = {
   emoji: string;
   color: string;
   topics: Topic[];
+};
+
+export type CalendarEventType = "exam" | "lecture" | "task" | "other";
+
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  type: CalendarEventType;
+  notes?: string;
 };
 
 export type MistakeEntry = {
@@ -172,10 +200,15 @@ type State = {
   nextExamDate: string;
   courses: Course[];
   mistakes: MistakeEntry[];
+  trash: TrashedExam[];
+  calendarEvents: CalendarEvent[];
   loading: boolean;
   initialized: boolean;
   init: () => Promise<void>;
   reset: () => void;
+  addCalendarEvent: (event: Omit<CalendarEvent, "id">) => Promise<void>;
+  updateCalendarEvent: (id: string, event: Omit<CalendarEvent, "id">) => Promise<void>;
+  deleteCalendarEvent: (id: string) => Promise<void>;
   addCourse: (name: string, emoji: string) => Promise<void>;
   addTopic: (courseId: string, name: string) => Promise<void>;
   addFile: (
@@ -208,6 +241,11 @@ type State = {
   deleteTopic: (courseId: string, topicId: string) => Promise<void>;
   deleteFile: (courseId: string, topicId: string, fileId: string) => Promise<void>;
   deleteExam: (courseId: string, topicId: string, examId: string) => Promise<void>;
+  /** Bulk soft-delete, resolving each exam's course/topic internally — for cross-course selections. */
+  deleteExams: (examIds: string[]) => Promise<void>;
+  restoreExam: (examId: string) => Promise<void>;
+  permanentlyDeleteExam: (examId: string) => Promise<void>;
+  emptyTrash: () => Promise<void>;
   deleteNote: (courseId: string, topicId: string, noteId: string) => Promise<void>;
   updateNote: (
     courseId: string,
@@ -274,6 +312,7 @@ async function loadAll() {
     mistakesRes,
     answersRes,
     lecturesRes,
+    calendarEventsRes,
   ] = await Promise.all([
     supabase.from("courses").select("*").order("created_at"),
     supabase.from("topics").select("*").order("created_at"),
@@ -284,7 +323,16 @@ async function loadAll() {
     supabase.from("mistakes").select("*").order("created_at"),
     supabase.from("answers").select("id"),
     supabase.from("lectures").select("*").order("position"),
+    supabase.from("calendar_events").select("*").order("event_date"),
   ]);
+
+  const calendarEvents: CalendarEvent[] = (calendarEventsRes.data ?? []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    date: e.event_date,
+    type: (e.type as CalendarEventType) ?? "other",
+    notes: e.notes ?? undefined,
+  }));
 
   const lecturesByTopic = new Map<string, Lecture[]>();
   for (const l of lecturesRes.data ?? []) {
@@ -305,17 +353,44 @@ async function loadAll() {
     questionsByExam.set(q.exam_id, arr);
   }
 
+  const topicMetaById = new Map(
+    (topicsRes.data ?? []).map((t) => [t.id, { name: t.name, courseId: t.course_id }]),
+  );
+  const courseNameByIdEarly = new Map((coursesRes.data ?? []).map((c) => [c.id, c.name]));
+
   const examsByTopic = new Map<string, Exam[]>();
+  const trash: TrashedExam[] = [];
+  const expiredExamIds: string[] = [];
+  const now = Date.now();
   for (const e of examsRes.data ?? []) {
-    const arr = examsByTopic.get(e.topic_id) ?? [];
-    arr.push({
+    const exam: Exam = {
       id: e.id,
       title: e.title,
       durationMin: e.duration_min,
       questions: questionsByExam.get(e.id) ?? [],
-    });
+    };
+    if (e.deleted_at) {
+      const ageDays = (now - new Date(e.deleted_at).getTime()) / 86400000;
+      if (ageDays >= TRASH_RETENTION_DAYS) {
+        expiredExamIds.push(e.id);
+        continue;
+      }
+      const meta = topicMetaById.get(e.topic_id);
+      trash.push({
+        exam,
+        courseId: meta?.courseId ?? "",
+        courseName: meta ? (courseNameByIdEarly.get(meta.courseId) ?? "") : "",
+        topicId: e.topic_id,
+        topicName: meta?.name ?? "",
+        deletedAt: e.deleted_at,
+      });
+      continue;
+    }
+    const arr = examsByTopic.get(e.topic_id) ?? [];
+    arr.push(exam);
     examsByTopic.set(e.topic_id, arr);
   }
+  if (expiredExamIds.length) void purgeExams(expiredExamIds);
 
   const filesByTopic = new Map<string, FileItem[]>();
   for (const f of filesRes.data ?? []) {
@@ -326,6 +401,9 @@ async function loadAll() {
       kind: f.kind as FileItem["kind"],
       size: f.size,
       addedAt: f.added_at,
+      storagePath: f.storage_path ?? undefined,
+      mimeType: f.mime_type ?? undefined,
+      lectureId: f.lecture_id ?? undefined,
     });
     filesByTopic.set(f.topic_id, arr);
   }
@@ -386,8 +464,21 @@ async function loadAll() {
   return {
     courses,
     mistakes,
+    trash: trash.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt)),
+    calendarEvents,
     questionsSolved: answersRes.data?.length ?? 0,
   };
+}
+
+/** Hard-deletes exams (and their cascaded rows) — used both for permanent trash
+ *  deletion and to purge anything past the 30-day retention window. */
+async function purgeExams(examIds: string[]) {
+  if (examIds.length === 0) return;
+  await supabase.from("mistakes").delete().in("exam_id", examIds);
+  await supabase.from("answers").delete().in("exam_id", examIds);
+  await supabase.from("questions").delete().in("exam_id", examIds);
+  const { error } = await supabase.from("exams").delete().in("id", examIds);
+  if (error) throw error;
 }
 
 export const useStore = create<State>((set, get) => ({
@@ -398,6 +489,8 @@ export const useStore = create<State>((set, get) => ({
   nextExamDate: new Date(Date.now() + 6 * 86400000).toISOString(),
   courses: [],
   mistakes: [],
+  trash: [],
+  calendarEvents: [],
   loading: false,
   initialized: false,
 
@@ -432,6 +525,8 @@ export const useStore = create<State>((set, get) => ({
       userEmail: "",
       courses: [],
       mistakes: [],
+      trash: [],
+      calendarEvents: [],
       questionsSolved: 0,
       initialized: false,
       loading: false,
@@ -505,6 +600,9 @@ export const useStore = create<State>((set, get) => ({
         kind: file.kind,
         size: file.size,
         added_at: file.addedAt,
+        storage_path: file.storagePath ?? null,
+        mime_type: file.mimeType ?? "application/pdf",
+        lecture_id: file.lectureId ?? null,
       })
       .select()
       .single();
@@ -526,6 +624,9 @@ export const useStore = create<State>((set, get) => ({
                           kind: data.kind as FileItem["kind"],
                           size: data.size,
                           addedAt: data.added_at,
+                          storagePath: data.storage_path ?? undefined,
+                          mimeType: data.mime_type ?? undefined,
+                          lectureId: data.lecture_id ?? undefined,
                         },
                       ],
                     }
@@ -786,11 +887,10 @@ export const useStore = create<State>((set, get) => ({
     }));
   },
 
+  // Deleting an exam is immediate and permanent — no Trash/soft-delete step, so
+  // nothing can bring it back on a later reload.
   deleteExam: async (courseId, topicId, examId) => {
-    await supabase.from("mistakes").delete().eq("exam_id", examId);
-    await supabase.from("answers").delete().eq("exam_id", examId);
-    await supabase.from("questions").delete().eq("exam_id", examId);
-    await supabase.from("exams").delete().eq("id", examId);
+    await purgeExams([examId]);
     set((st) => ({
       courses: st.courses.map((c) =>
         c.id === courseId
@@ -806,6 +906,40 @@ export const useStore = create<State>((set, get) => ({
       ),
       mistakes: st.mistakes.filter((m) => m.examId !== examId),
     }));
+  },
+
+  deleteExams: async (examIds) => {
+    if (examIds.length === 0) return;
+    await purgeExams(examIds);
+    set((st) => {
+      const idSet = new Set(examIds);
+      return {
+        courses: st.courses.map((c) => ({
+          ...c,
+          topics: c.topics.map((t) => ({ ...t, exams: t.exams.filter((e) => !idSet.has(e.id)) })),
+        })),
+        mistakes: st.mistakes.filter((m) => !idSet.has(m.examId)),
+      };
+    });
+  },
+
+  restoreExam: async (examId) => {
+    const { error } = await supabase.from("exams").update({ deleted_at: null }).eq("id", examId);
+    if (error) throw error;
+    const loaded = await loadAll();
+    set({ courses: loaded.courses, mistakes: loaded.mistakes, trash: loaded.trash });
+  },
+
+  permanentlyDeleteExam: async (examId) => {
+    await purgeExams([examId]);
+    set((st) => ({ trash: st.trash.filter((t) => t.exam.id !== examId) }));
+  },
+
+  emptyTrash: async () => {
+    const ids = get().trash.map((t) => t.exam.id);
+    if (ids.length === 0) return;
+    await purgeExams(ids);
+    set({ trash: [] });
   },
 
   deleteNote: async (courseId, topicId, noteId) => {
@@ -907,5 +1041,57 @@ export const useStore = create<State>((set, get) => ({
           : c,
       ),
     }));
+  },
+
+  addCalendarEvent: async (event) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (!user) return;
+    const { data } = await supabase
+      .from("calendar_events")
+      .insert({
+        user_id: user.id,
+        title: event.title,
+        event_date: event.date,
+        type: event.type,
+        notes: event.notes ?? null,
+      })
+      .select()
+      .single();
+    if (!data) return;
+    set((st) => ({
+      calendarEvents: [
+        ...st.calendarEvents,
+        {
+          id: data.id,
+          title: data.title,
+          date: data.event_date,
+          type: (data.type as CalendarEventType) ?? "other",
+          notes: data.notes ?? undefined,
+        },
+      ],
+    }));
+  },
+
+  updateCalendarEvent: async (id, event) => {
+    await supabase
+      .from("calendar_events")
+      .update({
+        title: event.title,
+        event_date: event.date,
+        type: event.type,
+        notes: event.notes ?? null,
+      })
+      .eq("id", id);
+    set((st) => ({
+      calendarEvents: st.calendarEvents.map((e) =>
+        e.id === id ? { id, title: event.title, date: event.date, type: event.type, notes: event.notes } : e,
+      ),
+    }));
+  },
+
+  deleteCalendarEvent: async (id) => {
+    await supabase.from("calendar_events").delete().eq("id", id);
+    set((st) => ({ calendarEvents: st.calendarEvents.filter((e) => e.id !== id) }));
   },
 }));

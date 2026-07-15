@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Flag,
@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   XCircle,
   RotateCcw,
+  Rows3,
+  FileStack,
 } from "lucide-react";
 import {
   gradeQuestion,
@@ -21,12 +23,155 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type Phase = "quiz" | "results";
+type Layout = "single" | "all";
 
-const selectClass =
-  "inline-block min-w-[7rem] rounded-lg border border-input bg-background px-2.5 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+export type TimerConfig =
+  | { mode: "none" }
+  | { mode: "total"; totalMinutes: number }
+  | { mode: "perQuestion"; secondsPerQuestion: number };
+
+function formatClock(totalSeconds: number) {
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+function hashString(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+function readDeadline(storageKey: string): number | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDeadline(storageKey: string, deadline: number) {
+  try {
+    localStorage.setItem(storageKey, String(deadline));
+  } catch {
+    // storage unavailable — timer still works in-memory, just won't survive a refresh
+  }
+}
+
+function clearDeadline(storageKey: string) {
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // ignore
+  }
+}
+
+function readJSONRecord<T>(storageKey: string): Record<string, T> {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeJSONRecord<T>(storageKey: string, map: Record<string, T>) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(map));
+  } catch {
+    // storage unavailable — state still works in-memory, just won't survive a refresh
+  }
+}
+
+function clearJSONRecord(storageKey: string) {
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // ignore
+  }
+}
+
+/** Full per-blank review: every option shown, marking the correct one and the student's
+ *  choice (if wrong), each with its own explanation — "why the other options are wrong".
+ *  Used for any blank that has a real option set (mcq's blank, or each blank inside a
+ *  multi-blank cloze passage) — not just mcq-type questions. */
+function OptionsBreakdown({
+  blank,
+  chosen,
+  explanations,
+}: {
+  blank: Blank;
+  chosen: string | undefined;
+  explanations: string[];
+}) {
+  return (
+    <div className="space-y-2">
+      {blank.options.map((opt, oi) => {
+        const isCorrect = opt === blank.correct;
+        const isChosen = opt === chosen;
+        return (
+          <div
+            key={oi}
+            className={cn(
+              "rounded-xl border p-3 text-sm",
+              isCorrect
+                ? "border-success/40 bg-success/10"
+                : isChosen
+                  ? "border-destructive/40 bg-destructive/10"
+                  : "border-border",
+            )}
+          >
+            <div className="flex items-center gap-2 font-medium text-foreground">
+              {isCorrect ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+              ) : isChosen ? (
+                <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+              ) : (
+                <span className="h-4 w-4 shrink-0" />
+              )}
+              <span>{opt}</span>
+              {isChosen && !isCorrect && (
+                <span className="text-xs font-normal text-muted-foreground">(your answer)</span>
+              )}
+              {isCorrect && <span className="text-xs font-normal text-muted-foreground">(correct answer)</span>}
+            </div>
+            {explanations[oi] && <div className="mt-1 pl-6 text-xs text-muted-foreground">{explanations[oi]}</div>}
+          </div>
+        );
+      })}
+      {chosen === undefined && <p className="text-xs italic text-muted-foreground">You left this question blank.</p>}
+    </div>
+  );
+}
+
+/** Per-option explanations for a blank, aligned with blank.options[]. Prefers the
+ *  blank's own `explanations[]` (new convention — works for any number of blanks,
+ *  e.g. every blank in a multi-blank cloze passage). Falls back to the legacy
+ *  question-level `explanations[]` for older exams that only ever had one blank. */
+function resolveOptionExplanations(question: Question, blank: Blank): string[] {
+  if (blank.explanations && blank.explanations.length === blank.options.length) return blank.explanations;
+  if (question.blanks.length === 1 && question.explanations.length === blank.options.length) {
+    return question.explanations;
+  }
+  return [];
+}
 
 function BlankSelect({
   blank,
@@ -38,20 +183,18 @@ function BlankSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <select
-      className={selectClass}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="" disabled>
-        —
-      </option>
-      {blank.options.map((opt, i) => (
-        <option key={i} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="inline-flex h-auto min-w-[9rem] max-w-full whitespace-normal rounded-lg border-input py-1.5 text-left text-sm font-medium [&>span]:line-clamp-none [&>span]:whitespace-normal">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent className="max-w-[min(24rem,90vw)]">
+        {blank.options.map((opt, i) => (
+          <SelectItem key={i} value={opt} className="whitespace-normal break-words py-2 pr-8">
+            {opt}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -253,15 +396,71 @@ export function ExamRunner({
   title,
   questions,
   onFinish,
+  timer,
 }: {
   title: string;
   questions: Question[];
   onFinish?: (answers: Record<string, string>) => void;
+  /** No timer, a single overall countdown, or a fresh countdown per question. */
+  timer?: TimerConfig;
 }) {
   const [phase, setPhase] = useState<Phase>("quiz");
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [flags, setFlags] = useState<Record<string, boolean>>({});
+  const [layout, setLayout] = useState<Layout>("single");
+
+  const timerMode = timer?.mode ?? "none";
+  const timed = timerMode !== "none";
+  // Stable per-attempt key (survives refresh/close) — derived from the question set itself
+  // rather than a prop, so every caller (generated, converted, or practice exams) gets a
+  // working, persistent timer with no extra wiring.
+  const storageKey = useMemo(
+    () => `examTimer:${hashString([...questions.map((q) => q.id)].sort().join(","))}`,
+    [questions],
+  );
+  const pqStorageKey = `${storageKey}:pq`;
+  const answersStorageKey = `${storageKey}:answers`;
+  const flagsStorageKey = `${storageKey}:flags`;
+
+  const [answers, setAnswers] = useState<Record<string, string>>(() =>
+    readJSONRecord<string>(answersStorageKey),
+  );
+  const [flags, setFlags] = useState<Record<string, boolean>>(() =>
+    readJSONRecord<boolean>(flagsStorageKey),
+  );
+
+  // Persist answers/flags as they change so a refresh or accidental close doesn't
+  // lose progress — same pattern as the timer deadline below, just keyed separately
+  // so a fresh attempt (or a submitted one, see submit()) starts from a clean slate.
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    writeJSONRecord(answersStorageKey, answers);
+  }, [answers, answersStorageKey, phase]);
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    writeJSONRecord(flagsStorageKey, flags);
+  }, [flags, flagsStorageKey, phase]);
+
+  const [remainingSec, setRemainingSec] = useState(() => {
+    if (timer?.mode === "total") {
+      const totalSec = Math.round(timer.totalMinutes * 60);
+      const existing = readDeadline(storageKey);
+      if (existing !== null) return Math.max(0, Math.round((existing - Date.now()) / 1000));
+      const deadline = Date.now() + totalSec * 1000;
+      writeDeadline(storageKey, deadline);
+      return totalSec;
+    }
+    return 0;
+  });
+  const [pqDeadlines, setPqDeadlines] = useState<Record<string, number>>(() =>
+    timerMode === "perQuestion" ? readJSONRecord<number>(pqStorageKey) : {},
+  );
+  const submittedRef = useRef(false);
+  // Auto-submit (from the timer's interval closure) must always see the latest
+  // answers, not whatever was current when the interval was set up.
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   const q = questions[current];
 
@@ -281,9 +480,71 @@ export function ExamRunner({
   }, [answers, questions]);
 
   const submit = () => {
-    onFinish?.(answers);
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    if (timerMode === "total") clearDeadline(storageKey);
+    if (timerMode === "perQuestion") clearDeadline(pqStorageKey);
+    clearJSONRecord(answersStorageKey);
+    clearJSONRecord(flagsStorageKey);
+    onFinish?.(answersRef.current);
     setPhase("results");
   };
+
+  // Overall countdown for "total" mode.
+  useEffect(() => {
+    if (timer?.mode !== "total" || phase !== "quiz") return;
+    const totalMinutes = timer.totalMinutes;
+    const tick = () => {
+      // Re-read the deadline (rather than trusting a captured start time) so the
+      // countdown is correct even after a refresh remounts this component.
+      let deadline = readDeadline(storageKey);
+      if (deadline === null) {
+        deadline = Date.now() + Math.round(totalMinutes * 60) * 1000;
+        writeDeadline(storageKey, deadline);
+      }
+      const left = Math.round((deadline - Date.now()) / 1000);
+      setRemainingSec(left);
+      if (left <= 0) submit();
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerMode, phase, storageKey]);
+
+  // Ensure the current question has its own deadline in "perQuestion" mode.
+  useEffect(() => {
+    if (timer?.mode !== "perQuestion" || phase !== "quiz") return;
+    if (pqDeadlines[q.id] !== undefined) return;
+    const deadline = Date.now() + Math.round(timer.secondsPerQuestion) * 1000;
+    setPqDeadlines((prev) => {
+      const next = { ...prev, [q.id]: deadline };
+      writeJSONRecord(pqStorageKey, next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerMode, phase, q.id]);
+
+  // Countdown for the CURRENT question in "perQuestion" mode — expiry auto-advances
+  // (or submits, on the last question). Going back is disabled in the UI below, so a
+  // question's clock only ever runs once.
+  useEffect(() => {
+    if (timerMode !== "perQuestion" || phase !== "quiz") return;
+    const deadline = pqDeadlines[q.id];
+    if (deadline === undefined) return;
+    const tick = () => {
+      const left = Math.round((deadline - Date.now()) / 1000);
+      setRemainingSec(left);
+      if (left <= 0) {
+        if (current < questions.length - 1) setCurrent((c) => c + 1);
+        else submit();
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerMode, phase, q.id, pqDeadlines[q.id]]);
 
   if (phase === "results") {
     return (
@@ -357,44 +618,51 @@ export function ExamRunner({
                 </p>
               )}
 
-              <div className="space-y-2">
-                {g.perBlank.map((pb) => (
-                  <div
-                    key={pb.blank.id}
-                    className={cn(
-                      "rounded-xl border p-3 text-sm",
-                      pb.correct
-                        ? "border-success/40 bg-success/10"
-                        : "border-destructive/40 bg-destructive/10",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 font-medium text-foreground">
-                      {pb.correct ? (
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-                      ) : (
-                        <XCircle className="h-4 w-4 shrink-0 text-destructive" />
-                      )}
-                      {pb.blank.label && (
-                        <span className="text-muted-foreground">{pb.blank.label}:</span>
-                      )}
-                      <span>{pb.value || "— (blank)"}</span>
-                    </div>
-                    {!pb.correct && (
-                      <div className="mt-1 pl-6 text-xs text-success">
-                        Correct answer: {pb.blank.correct}
+              <div className="space-y-3">
+                {question.blanks.map((blank, bi) => {
+                  const pb = g.perBlank[bi];
+                  if (blank.options.length > 0) {
+                    return (
+                      <div key={blank.id}>
+                        {blank.label && question.blanks.length > 1 && (
+                          <p className="mb-1 text-xs font-semibold text-muted-foreground">{blank.label}</p>
+                        )}
+                        {isCloze && question.blanks.length > 1 && (
+                          <p className="mb-1 text-xs font-semibold text-muted-foreground">Blank {bi + 1}</p>
+                        )}
+                        <OptionsBreakdown
+                          blank={blank}
+                          chosen={pb.value}
+                          explanations={resolveOptionExplanations(question, blank)}
+                        />
                       </div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  }
+                  // no option set (e.g. "short" answer) — simple correct/incorrect display
+                  return (
+                    <div
+                      key={blank.id}
+                      className={cn(
+                        "rounded-xl border p-3 text-sm",
+                        pb.correct ? "border-success/40 bg-success/10" : "border-destructive/40 bg-destructive/10",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 font-medium text-foreground">
+                        {pb.correct ? (
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                        ) : (
+                          <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+                        )}
+                        {blank.label && <span className="text-muted-foreground">{blank.label}:</span>}
+                        <span>{pb.value || "— (blank)"}</span>
+                      </div>
+                      {!pb.correct && (
+                        <div className="mt-1 pl-6 text-xs text-success">Correct answer: {blank.correct}</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-
-              {question.type === "mcq" && question.explanations.length > 0 && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {question.explanations[
-                    Math.max(0, question.blanks[0].options.indexOf(question.blanks[0].correct))
-                  ]}
-                </p>
-              )}
             </Card>
           );
         })}
@@ -409,71 +677,165 @@ export function ExamRunner({
   const answeredQuestions = questions.filter((question) =>
     question.blanks.some((b) => answers[`${question.id}:${b.id}`] !== undefined),
   ).length;
+  const flaggedIds = questions.filter((question) => flags[question.id]).map((question) => question.id);
+  const isAnswered = (question: Question) =>
+    question.blanks.some((b) => answers[`${question.id}:${b.id}`] !== undefined);
+
+  const QuestionCard = ({ question, index }: { question: Question; index: number }) => (
+    <Card className="soft-shadow mb-5 border-none p-5">
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <p className="text-lg font-bold leading-snug text-foreground">
+          {layout === "all" && <span className="mr-1 text-muted-foreground">{index + 1}.</span>}
+          {question.type === "cloze"
+            ? "Fill in the blanks"
+            : question.type === "matching"
+              ? question.text || "Match each item"
+              : question.type === "truefalse"
+                ? question.text || "Mark each statement True or False"
+                : question.text}
+        </p>
+        <button
+          onClick={() => setFlags((f) => ({ ...f, [question.id]: !f[question.id] }))}
+          className={cn(
+            "shrink-0 rounded-full p-2 transition-colors",
+            flags[question.id] ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground",
+          )}
+          aria-label="Flag question for review"
+        >
+          <Flag className="h-4 w-4" />
+        </button>
+      </div>
+
+      <QuestionBody
+        q={question}
+        answers={answers}
+        setAnswer={(blankId, v) => setAnswers((a) => ({ ...a, [`${question.id}:${blankId}`]: v }))}
+      />
+    </Card>
+  );
 
   return (
     <div className="pt-1">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-semibold text-foreground">
           Question {current + 1} of {questions.length}
+          {flaggedIds.length > 0 && (
+            <span className="ml-2 text-xs font-medium text-warning-foreground">
+              · {flaggedIds.length} flagged
+            </span>
+          )}
         </span>
-        <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
-          <Timer className="h-4 w-4" />{" "}
-          {String(Math.floor((current + 1) * 0.5)).padStart(2, "0")}:00
-        </span>
-      </div>
-      <Progress value={(answeredQuestions / questions.length) * 100} className="mb-5 h-2" />
-
-      <Card className="soft-shadow mb-5 border-none p-5">
-        <div className="mb-4 flex items-start justify-between gap-2">
-          <p className="text-lg font-bold leading-snug text-foreground">
-            {q.type === "cloze"
-              ? "Fill in the blanks"
-              : q.type === "matching"
-                ? q.text || "Match each item"
-                : q.type === "truefalse"
-                  ? q.text || "Mark each statement True or False"
-                  : q.text}
-          </p>
-          <button
-            onClick={() => setFlags((f) => ({ ...f, [q.id]: !f[q.id] }))}
-            className={cn(
-              "shrink-0 rounded-full p-2 transition-colors",
-              flags[q.id]
-                ? "bg-warning/20 text-warning-foreground"
-                : "bg-muted text-muted-foreground",
-            )}
-            aria-label="Flag question"
-          >
-            <Flag className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          {timed && (
+            <span
+              className={cn(
+                "flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium",
+                remainingSec < (timerMode === "perQuestion" ? 10 : 300)
+                  ? "bg-destructive/15 text-destructive animate-pulse"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              <Timer className="h-4 w-4" /> {formatClock(remainingSec)}
+            </span>
+          )}
+          {timerMode !== "perQuestion" && (
+            <ToggleGroup type="single" value={layout} onValueChange={(v) => v && setLayout(v as Layout)}>
+              <ToggleGroupItem value="single" aria-label="One question per page" title="One question per page">
+                <FileStack className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="all" aria-label="All questions on one page" title="All questions on one page">
+                <Rows3 className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
-
-        <QuestionBody q={q} answers={answers} setAnswer={setAnswer} />
-      </Card>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          className="flex-1 rounded-full"
-          disabled={current === 0}
-          onClick={() => setCurrent((c) => c - 1)}
-        >
-          <ChevronLeft className="h-4 w-4" /> Previous
-        </Button>
-        {current < questions.length - 1 ? (
-          <Button className="flex-1 rounded-full" onClick={() => setCurrent((c) => c + 1)}>
-            Next <ChevronRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button className="flex-1 rounded-full" onClick={submit}>
-            Submit exam
-          </Button>
-        )}
       </div>
-      {current === questions.length - 1 && (
-        <p className="mt-3 flex items-center justify-center gap-1 text-xs text-muted-foreground">
-          <RotateCcw className="h-3 w-3" /> You can go back and edit answers before submitting
+      <Progress value={(answeredQuestions / questions.length) * 100} className="mb-3 h-2" />
+
+      {timerMode === "perQuestion" && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Time per question — once it advances you can't go back.
         </p>
+      )}
+
+      {flaggedIds.length > 0 && layout === "single" && timerMode !== "perQuestion" && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {flaggedIds.map((id) => {
+            const idx = questions.findIndex((question) => question.id === id);
+            return (
+              <button
+                key={id}
+                onClick={() => setCurrent(idx)}
+                className="flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-medium text-warning-foreground"
+              >
+                <Flag className="h-3 w-3" /> Q{idx + 1}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {layout === "single" && timerMode !== "perQuestion" && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {questions.map((question, i) => (
+            <button
+              key={question.id}
+              onClick={() => setCurrent(i)}
+              aria-label={`Jump to question ${i + 1}`}
+              className={cn(
+                "grid h-7 w-7 place-items-center rounded-full text-xs font-semibold transition-colors",
+                i === current
+                  ? "bg-primary text-primary-foreground"
+                  : flags[question.id]
+                    ? "bg-warning/20 text-warning-foreground"
+                    : isAnswered(question)
+                      ? "bg-success/15 text-success"
+                      : "bg-muted text-muted-foreground",
+              )}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {layout === "single" ? (
+        <QuestionCard question={q} index={current} />
+      ) : (
+        questions.map((question, i) => <QuestionCard key={question.id} question={question} index={i} />)
+      )}
+
+      {layout === "single" ? (
+        <>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-full"
+              disabled={current === 0 || timerMode === "perQuestion"}
+              onClick={() => setCurrent((c) => c - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+            {current < questions.length - 1 ? (
+              <Button className="flex-1 rounded-full" onClick={() => setCurrent((c) => c + 1)}>
+                Next <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button className="flex-1 rounded-full" onClick={submit}>
+                Submit exam
+              </Button>
+            )}
+          </div>
+          {current === questions.length - 1 && timerMode !== "perQuestion" && (
+            <p className="mt-3 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <RotateCcw className="h-3 w-3" /> You can go back and edit answers before submitting
+            </p>
+          )}
+        </>
+      ) : (
+        <Button className="w-full rounded-full" onClick={submit}>
+          Submit exam
+        </Button>
       )}
     </div>
   );

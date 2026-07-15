@@ -3,26 +3,21 @@ import { useEffect, useRef, useState } from "react";
 import { FileText, Loader2, UploadCloud, CheckCircle2, FileUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell, PageHeader } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useStore, type QuestionType } from "@/lib/store";
 import { getAiKeyStatus, parseOldExam } from "@/lib/ai.functions";
+import { extractImages, stripDataUrl } from "@/lib/extract-images";
+import { fileToBase64 } from "@/lib/files";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/upload-exam")({
   component: UploadOldExamPage,
 });
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] ?? "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+const DURATIONS = [30, 60, 90, 120] as const;
 
 function UploadOldExamPage() {
   const navigate = useNavigate();
@@ -40,6 +35,10 @@ function UploadOldExamPage() {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<{ detected: number; converted: number } | null>(null);
+  const [duration, setDuration] = useState<number>(60);
+  const [customDuration, setCustomDuration] = useState("");
+  const [customDurationOn, setCustomDurationOn] = useState(false);
+  const finalDuration = customDurationOn ? Math.min(Math.max(Number(customDuration) || 0, 5), 300) : duration;
 
   useEffect(() => {
     checkStatus().then((r) => setHasKey(r.hasKey)).catch(() => setHasKey(false));
@@ -79,7 +78,18 @@ function UploadOldExamPage() {
     setReport(null);
     try {
       const pdfBase64 = await fileToBase64(file);
-      const res = await runParse({ data: { pdfBase64, mediaType: "application/pdf" } });
+      // render pages so the AI can see the yellow-highlighted answers and keep original figures
+      const pageImages = await extractImages([file]).catch(() => []);
+      const res = await runParse({
+        data: {
+          pdfBase64,
+          mediaType: "application/pdf",
+          images: pageImages.map((im) => ({
+            data: stripDataUrl(im.dataUrl),
+            mediaType: im.mediaType,
+          })),
+        },
+      });
       setReport({ detected: res.detected, converted: res.converted });
       if (!res.questions.length) {
         toast.error("No questions could be extracted from this PDF.");
@@ -89,13 +99,18 @@ function UploadOldExamPage() {
         courseId,
         topicId,
         file.name.replace(/\.pdf$/i, "") || `${topic?.name ?? "Past"} — past exam`,
-        Math.max(10, Math.round(res.questions.length * 1.2)),
-        res.questions.map((q) => ({
-          type: q.type as QuestionType,
-          text: q.text,
-          blanks: q.blanks,
-          explanations: q.explanations ?? [],
-        })),
+        finalDuration,
+        res.questions.map((q) => {
+          const hasImg = q.imageIndex !== undefined && pageImages[q.imageIndex];
+          return {
+            type: q.type as QuestionType,
+            text: q.text,
+            blanks: q.blanks,
+            explanations: q.explanations ?? [],
+            imageUrl: hasImg ? pageImages[q.imageIndex!].dataUrl : undefined,
+            imageLabels: hasImg ? q.imageLabels ?? [] : undefined,
+          };
+        }),
       );
       toast.success(`Saved exam with ${res.questions.length} questions`);
     } catch (e) {
@@ -219,11 +234,51 @@ function UploadOldExamPage() {
             )}
           </div>
 
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <Label className="mb-2 block">Exam duration (minutes)</Label>
+            <div className="flex flex-wrap gap-2">
+              {DURATIONS.map((d) => (
+                <Button
+                  key={d}
+                  variant={!customDurationOn && duration === d ? "default" : "outline"}
+                  className="rounded-full"
+                  onClick={() => {
+                    setCustomDurationOn(false);
+                    setDuration(d);
+                  }}
+                >
+                  {d}
+                </Button>
+              ))}
+              <Button
+                variant={customDurationOn ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setCustomDurationOn(true)}
+              >
+                Custom
+              </Button>
+            </div>
+            {customDurationOn && (
+              <Input
+                type="number"
+                min={5}
+                max={300}
+                placeholder="e.g. 45"
+                className="mt-3"
+                value={customDuration}
+                onChange={(e) => setCustomDuration(e.target.value)}
+              />
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Just a starting default — you'll choose the timer again when you start the exam.
+            </p>
+          </div>
+
           <div className="rounded-2xl border border-border bg-muted/60 p-4 text-xs leading-relaxed text-muted-foreground">
-            Questions are reproduced <strong>exactly</strong> as written — no rewording, no fixes,
-            original typos kept. Most exams are CLOZE passages: the passage stays intact with a
-            dropdown per blank (1 point each). Correct answers are read only from the{" "}
-            <code>The correct answer is: [ ]</code> lines, never from student selections.
+            Your exam is reproduced exactly as written — wording and fill-in-the-blank passages
+            are never rewritten. Each missing word/phrase gets 4–8 shuffled answer choices, with
+            the correct one read from the <strong>yellow-highlighted answer</strong> in your PDF —
+            never from a student's circled or checked answer.
           </div>
 
           {report && (

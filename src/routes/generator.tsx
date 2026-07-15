@@ -3,39 +3,34 @@ import { useState } from "react";
 import { HelpCircle, Sparkles } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { useStore } from "@/lib/store";
+import { MaterialPicker, EMPTY_SELECTION, type MaterialSelection } from "@/components/MaterialPicker";
+
+type GeneratorSearch = { courseId?: string; topicId?: string };
 
 export const Route = createFileRoute("/generator")({
+  validateSearch: (search: Record<string, unknown>): GeneratorSearch => ({
+    courseId: typeof search.courseId === "string" ? search.courseId : undefined,
+    topicId: typeof search.topicId === "string" ? search.topicId : undefined,
+  }),
   component: GeneratorPage,
 });
 
-const COUNTS = [20, 50, 100];
-const TYPES = [
-  { id: "cloze", label: "Cloze" },
-  { id: "matching", label: "Matching" },
-  { id: "truefalse", label: "True / False" },
-  { id: "short", label: "Short answer" },
-  { id: "mcq", label: "Multiple choice" },
-];
-
 function GeneratorPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const courses = useStore((s) => s.courses);
-  const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
-  const [count, setCount] = useState(50);
-  const [types, setTypes] = useState<string[]>(["mcq"]);
-
+  const [courseId, setCourseId] = useState(search.courseId ?? courses[0]?.id ?? "");
   const course = courses.find((c) => c.id === courseId);
-  const topicId = course?.topics[0]?.id;
-
-  const toggle = (id: string) =>
-    setTypes((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
+  const [topicId, setTopicId] = useState(search.topicId ?? course?.topics[0]?.id ?? "");
+  const topic = course?.topics.find((t) => t.id === topicId);
+  const [material, setMaterial] = useState<MaterialSelection>(EMPTY_SELECTION);
 
   return (
     <AppShell>
       <PageHeader
         eyebrow="Practice"
         title="Question Generator"
-        subtitle="Turn your materials into practice questions."
+        subtitle="Choose exactly what material the AI should generate from."
       />
 
       {courses.length === 0 ? (
@@ -45,7 +40,12 @@ function GeneratorPage() {
           <Field label="Course">
             <select
               value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
+              onChange={(e) => {
+                setCourseId(e.target.value);
+                const c = courses.find((x) => x.id === e.target.value);
+                setTopicId(c?.topics[0]?.id ?? "");
+                setMaterial(EMPTY_SELECTION);
+              }}
               className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-foreground/30"
             >
               {courses.map((c) => (
@@ -56,56 +56,50 @@ function GeneratorPage() {
             </select>
           </Field>
 
-          <Field label="Number of questions">
-            <div className="flex flex-wrap gap-2">
-              {COUNTS.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setCount(n)}
-                  className={`rounded-full border px-5 py-2 text-sm font-medium ${
-                    count === n
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {n}
-                </button>
+          <Field label="Topic">
+            <select
+              value={topicId}
+              onChange={(e) => {
+                setTopicId(e.target.value);
+                setMaterial(EMPTY_SELECTION);
+              }}
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-foreground/30"
+            >
+              {course?.topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
               ))}
-            </div>
+            </select>
           </Field>
 
-          <Field label="Question types">
-            <div className="flex flex-wrap gap-2">
-              {TYPES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => toggle(t.id)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium ${
-                    types.includes(t.id)
-                      ? "border-accent bg-accent/15 text-accent"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </Field>
+          {course && (
+            <Field label="Material to include">
+              <MaterialPicker topics={course.topics} value={material} onChange={setMaterial} />
+            </Field>
+          )}
 
           <button
-            disabled={!topicId || types.length === 0}
+            disabled={!topicId}
             onClick={() =>
               course &&
               topicId &&
               navigate({
                 to: "/generate-exam/$courseId/$topicId",
                 params: { courseId: course.id, topicId },
+                search: { lectureIds: material.lectureIds, fileIds: material.fileIds },
               })
             }
             className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            <Sparkles className="h-4 w-4" /> Generate {count} questions
+            <Sparkles className="h-4 w-4" /> Continue
           </button>
+          {topic && material.lectureIds.length === 0 && material.fileIds.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Nothing selected — the exam will be generated from general knowledge of "{topic.name}" only,
+              not grounded in specific material.
+            </p>
+          )}
         </div>
       )}
     </AppShell>

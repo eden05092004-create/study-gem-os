@@ -9,6 +9,8 @@ export type AiBlank = {
   label?: string;
   options: string[];
   correct: string;
+  /** one explanation per option (same order as options[]) — why each is right or wrong */
+  explanations?: string[];
 };
 
 export type AiImageLabel = { id: string; x: number; y: number };
@@ -62,6 +64,12 @@ const questionsSchema = {
                 label: { type: "string" },
                 options: { type: "array", items: { type: "string" } },
                 correct: { type: "string" },
+                explanations: {
+                  type: "array",
+                  items: { type: "string" },
+                  description:
+                    "One entry per option, same order as options[] — why each option is correct or incorrect for this blank.",
+                },
               },
               required: ["id", "options", "correct"],
             },
@@ -124,7 +132,11 @@ async function callAnthropic(
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 8000,
+      // Generous headroom: a single exam can have 50-100+ blanks, and rule 4 below
+      // requires 4-8 full options plus one explanation sentence per option for EACH
+      // blank — that easily exceeds 8000 tokens and previously caused the model to
+      // silently degrade to a single option per blank to fit the budget.
+      max_tokens: 64000,
       system,
       tools: [
         {
@@ -402,39 +414,6 @@ export const saveAiKey = createServerFn({ method: "POST" })
     return { hasKey: !!data.key };
   });
 
-export const generateExam = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: {
-      subject: string;
-      types: string[];
-      count: number;
-    }) => ({
-      subject: String(input.subject ?? "").slice(0, 500),
-      types: Array.isArray(input.types) ? input.types.slice(0, 5) : [],
-      count: Math.min(Math.max(Number(input.count) || 20, 1), 100),
-    }),
-  )
-  .handler(async ({ data, context }) => {
-    const key = await getKey(context.supabase, context.userId);
-    if (!key) throw new Error("AI features require an API key.");
-
-    const typeList = data.types.length ? data.types.join(", ") : "mixed";
-    const system = `You are a medical school examiner. Generate high-quality, exam-style questions.
-Return exactly ${data.count} questions via the save_questions tool.
-Allowed question types: ${typeList}. If "mixed" is requested, vary across cloze, matching, truefalse, short and mcq.
-Format rules per type:
-- mcq: text is the question; a single blank whose options are the choices and correct is the right choice. Fill explanations[] (one per option).
-- cloze: text is a passage with [[1]], [[2]] tokens; one blank per token (id matches the token number) with options and correct.
-- matching: one blank per item; blank.label is the item, options are all candidate descriptions, correct is the right one.
-- truefalse: one blank per statement; blank.label is the statement, options are ["True","False"], correct is one of them.
-- short: one blank; options empty; correct is the accepted answer. text is the question.`;
-    const prompt = `Subject / material to base the exam on:\n${data.subject}\n\nGenerate ${data.count} questions of type(s): ${typeList}.`;
-
-    const out = await callAnthropic(key, system, [{ type: "text", text: prompt }]);
-    return { questions: out.questions };
-  });
-
 type AiImageInput = { data: string; mediaType: string };
 
 function sanitizeImages(input: unknown): AiImageInput[] {
@@ -447,6 +426,76 @@ function sanitizeImages(input: unknown): AiImageInput[] {
     .slice(0, 20)
     .map((im) => ({ data: im.data, mediaType: im.mediaType }));
 }
+
+function sanitizeDocuments(input: unknown): AiImageInput[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(
+      (d): d is AiImageInput => !!d && typeof d.data === "string" && typeof d.mediaType === "string",
+    )
+    .slice(0, 12)
+    .map((d) => ({ data: d.data, mediaType: d.mediaType }));
+}
+
+export const generateExam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      subject: string;
+      types: string[];
+      count: number;
+      noteText?: string;
+      documents?: AiImageInput[];
+    }) => ({
+      subject: String(input.subject ?? "").slice(0, 1000),
+      types: Array.isArray(input.types) ? input.types.slice(0, 5) : [],
+      count: Math.min(Math.max(Number(input.count) || 20, 1), 100),
+      noteText: typeof input.noteText === "string" ? input.noteText.slice(0, 60000) : "",
+      documents: sanitizeDocuments(input.documents),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const key = await getKey(context.supabase, context.userId);
+    if (!key) throw new Error("AI features require an API key.");
+
+    const typeList = data.types.length ? data.types.join(", ") : "mixed";
+    const hasMaterial = data.documents.length > 0 || data.noteText.length > 0;
+    const system = `You are a senior medical school examiner writing questions for a real, graded university exam. Generate high-quality, exam-style questions via the save_questions tool.
+
+GROUNDING (most important rule):
+${
+  hasMaterial
+    ? "- Base EVERY question strictly on the supplied source material below (attached documents and/or notes). Do not introduce facts, numbers, or claims that are not present in that material. If the material doesn't cover something, don't ask about it."
+    : "- No source material was supplied. State that internally and rely only on well-established, general medical curriculum knowledge for the given subject — never invent specific studies, numbers, or claims you aren't confident are standard textbook fact."
+}
+- Never fabricate citations, statistics, or named studies.
+
+QUALITY BAR (real med-school exam, not a basic quiz):
+- Favor single-best-answer clinical-vignette style stems for mcq: a short realistic patient/scenario or applied-reasoning setup, then a precise question — the kind that requires synthesizing the material, not just recalling a definition.
+- Test understanding and application (mechanisms, cause-and-effect, "what happens if X", differentiating close concepts) — avoid trivial recall or questions answerable from the stem alone.
+- Every question must be materially different from the others in this batch — no near-duplicate stems or rephrased repeats of the same fact.
+- Distractors (wrong mcq options) must be plausible and topic-relevant, not obviously wrong filler.
+- Write in clear, professional exam language — no filler, no hedging, no "trick" wording for its own sake.
+
+Return exactly ${data.count} questions. Allowed question types: ${typeList}. If "mixed" is requested, favor mcq for most questions and vary the remainder across cloze, matching, truefalse, short.
+Format rules per type:
+- mcq: text is the question/vignette; a single blank whose options are 4-6 choices and correct is the right choice. Fill explanations[] (one per option, explaining why it's right or wrong).
+- cloze: text is a passage with [[1]], [[2]] tokens; one blank per token (id matches the token number) with options and correct.
+- matching: one blank per item; blank.label is the item, options are all candidate descriptions, correct is the right one.
+- truefalse: one blank per statement; blank.label is the statement, options are ["True","False"], correct is one of them.
+- short: one blank; options empty; correct is the accepted answer. text is the question.`;
+
+    const content: ContentBlock[] = [];
+    data.documents.forEach((doc) => {
+      content.push({ type: "document", source: { type: "base64", media_type: doc.mediaType, data: doc.data } });
+    });
+    let prompt = `Subject / scope:\n${data.subject}\n\nGenerate ${data.count} questions of type(s): ${typeList}.`;
+    if (data.noteText) prompt += `\n\nSource notes:\n${data.noteText}`;
+    content.push({ type: "text", text: prompt });
+
+    const out = await callAnthropic(key, system, content);
+    return { questions: out.questions };
+  });
 
 export const parseOldExam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -466,21 +515,38 @@ export const parseOldExam = createServerFn({ method: "POST" })
     if (!key) throw new Error("AI features require an API key.");
 
     const hasImages = data.images.length > 0;
-    const system = `You transcribe an EXISTING exam PDF/document into structured questions for an interactive exam engine. CRITICAL RULES — follow exactly:
+    const system = `You convert an EXISTING exam PDF into an interactive practice exam that is AS CLOSE AS POSSIBLE to the original. The only thing you add is answer choices for each missing word/phrase — you do not rewrite, restructure, or simplify anything else. CRITICAL RULES — follow exactly:
 
-1. REPRODUCE EXACTLY: copy every question, passage and answer option EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", or normalize anything. Keep original typos, punctuation, casing and spacing.
+1. REPRODUCE THE QUESTION/PASSAGE EXACTLY: copy every question, passage and surrounding text EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", normalize, or restructure the wording — change it only if absolutely unavoidable to represent a blank (rule 2). Keep original typos, punctuation, casing and spacing.
 
-2. CLOZE IS THE DEFAULT: most questions are CLOZE — a single passage containing MULTIPLE blanks, each blank rendered as a dropdown. Keep the whole passage intact as ONE question of type "cloze". Do NOT split a multi-blank passage into several separate questions. In the passage "text", replace each blank with a token [[1]], [[2]], [[3]] … in reading order. Create one entry in blanks[] per token, with id equal to the token number ("1", "2", …), options = the exact dropdown choices for that blank, and correct = the exact bracketed correct answer for that blank.
+2. A MISSING WORD/PHRASE STAYS A CLOZE BLANK — THIS IS THE DEFAULT: if the original question has a gap (a blank line, underline, ellipsis, bracket, or similar missing word/phrase within a sentence or passage), you MUST preserve that exact structure as a "cloze" question. Keep the surrounding sentence/passage text EXACTLY as in the source, and replace ONLY the missing word/phrase with a token [[1]], [[2]], … in reading order (one token per blank). Do NOT reveal the answer in the passage text, and do NOT turn the passage into a differently-worded standalone question. A passage can contain multiple blanks — keep them all as ONE "cloze" question; never split a passage into separate questions.
+   - Use "mcq" ONLY when the source itself already presents a standalone question with its own visible answer options (a genuine multiple-choice question, not a fill-in-the-blank) — and even then, copy the stem exactly as rule 1 requires.
+   - Use "matching"/"truefalse"/"short" only when the source is unambiguously that format.
 
-3. CORRECT ANSWERS SOURCE: the correct answer for a blank/question is taken ONLY from the text in square brackets on a line reading "The correct answer is:" (e.g. "The correct answer is: [X]"). For a passage with multiple blanks these appear in order — map them to the blanks in the same order. NEVER infer the correct answer from what the student selected, from highlighting, or from your own knowledge. If no "The correct answer is:" line exists for a blank, leave its correct as an empty string.
+3. CORRECT ANSWER SOURCE — VISUAL, FROM THE PAGE IMAGE: this is the single most important rule. The rasterized page images supplied after the document are REQUIRED grading input, not optional illustration. For each blank/question, look at its page image and find the YELLOW-HIGHLIGHTED answer in the answer box/key (often at the bottom of the page or exam) — a yellow marker/highlighter box or fill over the correct word, phrase, or option. That highlighted text is the correct answer, copied EXACTLY as highlighted.
+   - NEVER use a bracketed "[X]" text line as the answer source.
+   - NEVER use a student's circled answer, checkmark, handwritten mark, or any non-yellow annotation — those may be WRONG (a student's mistake) and must be ignored as answer signals.
+   - NEVER guess the correct answer from your own knowledge of the subject.
+   - If a blank genuinely has no yellow highlight visible anywhere, leave its "correct" as an empty string rather than guessing.
 
-4. PARTIAL CREDIT: each blank counts as 1 point, so include every blank in a passage.
+4. GIVE EVERY BLANK 4-8 OPTIONS — NO EXCEPTIONS, EVEN IN LARGE EXAMS: for each blank — whether it's a cloze token or an mcq's single blank — build a set of 4 to 8 multiple-choice options: the real answer (from the yellow highlight, worded EXACTLY as highlighted) plus realistic distractors to fill out the set. A blank whose options[] has fewer than 4 entries (e.g. just the correct answer alone) is INVALID OUTPUT — this rule applies identically whether the exam has 5 blanks or 100; never shorten, skip, or thin out distractors/explanations to save space or move faster. You have a large output budget — use it. Distractors must be:
+   - Scientifically/medically ACCURATE as statements in their own right (a true fact about a related-but-wrong concept), not fabricated nonsense — the error must be that they don't answer THIS blank, not that they're false in general.
+   - Plausible and topic-relevant — something a student who half-understands the material could believably pick — never an obviously-wrong throwaway option.
+   - Distinct from each other and from the correct answer — no near-duplicates, no options trivially eliminable by wording alone.
+   - Matched in length/register to the real answer so it doesn't visually stand out.
+   - If the source already shows 4-8 options for that blank, keep the real ones as written and add distractors only if truly short of 4.
 
-5. Other formats: use "matching" (one blank per item, label = item, options = candidate descriptions), "truefalse" (one blank per statement, label = statement, options ["True","False"]), "short" (one blank, empty options, correct = accepted answer), or "mcq" only for a standalone single-answer multiple-choice question (one blank, options = choices).
+5. PER-BLANK EXPLANATIONS — REQUIRED, even though the source has none, for EVERY blank in the exam with no exceptions for large exams: for every blank, fill blanks[].explanations[] with exactly one entry per option, in the SAME ORDER as that blank's options[]. Each entry is 1-2 sentences of accurate rationale for why that specific option is correct or incorrect for this blank. Write these yourself from your medical knowledge — this is the one place you add content beyond pure transcription, and it must be scientifically accurate. Do not omit explanations for later questions to save space — every blank gets them, from the first question to the last.
 
-6. IMAGES: if a question refers to a figure/diagram shown in the material, KEEP the image. After the document, page images are supplied in order starting at index 0. Set imageIndex to the index of the page image that contains the figure for that question, and keep the question's normal type/blanks. When the original question asks to identify numbered structures on the figure, use type "image_identify" and supply imageLabels (id must match the blank id, x/y normalized 0..1). Never invent images that are not in the source.
+6. RANDOMIZE OPTION ORDER PER BLANK: list each blank's options[] (and its matching explanations[], kept in the same order) in randomized order — not answer-first, not source order — so the correct answer isn't always in the same position. This is safe: grading matches by value, not position.
 
-7. COMPLETENESS: report "detected" = number of questions found in the document, and "converted" = number successfully converted with a usable structure. These should match when everything converts.`;
+7. PARTIAL CREDIT: each blank counts as 1 point, so include every blank in a passage-style question.
+
+8. Non-cloze/non-mcq formats (rare): "matching" (one blank per item, label = item, options = candidate descriptions), "truefalse" (one blank per statement, label = statement, options ["True","False"]) — only when the source is unambiguously that format. NEVER use type "short" and NEVER leave a blank's options[] empty — every single blank in the exam, with zero exceptions, gets 4-8 options per rule 4. If a blank looks like open-ended free text in the source, it still gets converted into a 4-8-option choice using rule 4's process.
+
+9. IMAGES: if a question refers to a figure/diagram shown in the material, KEEP the image. Page images are supplied in order starting at index 0. Set imageIndex to the index of the page image that contains the figure for that question. When the original question asks to identify numbered structures on the figure, use type "image_identify" and supply imageLabels (id must match the blank id, x/y normalized 0..1). Never invent images that are not in the source.
+
+10. COMPLETENESS: report "detected" = number of questions found in the document, and "converted" = number successfully converted with a usable structure. These should match when everything converts.`;
 
     const content: ContentBlock[] = [
       {
@@ -496,10 +562,10 @@ export const parseOldExam = createServerFn({ method: "POST" })
     });
     content.push({
       type: "text",
-      text: `Extract all questions from this exam following the rules exactly. Remember: correct answers come only from the "The correct answer is: [...]" lines.${
+      text: `Extract all questions from this exam following the rules exactly. Preserve every fill-in-the-blank passage exactly as written — do not rewrite it into a standalone question. For each blank, find the YELLOW-HIGHLIGHTED answer on its page image — that is the only valid source for the correct answer — then build out 4-8 randomized, scientifically accurate options for that blank with one explanation per option covering why it's right or wrong.${
         hasImages
-          ? " The images after the document are the page renders, indexed from 0 in order; reference them via imageIndex when a question uses a figure."
-          : ""
+          ? " The images after the document are the page renders, indexed from 0 in order — use them to locate the yellow highlight for every question, and reference them via imageIndex when a question uses a figure."
+          : " No page images were supplied, so highlight color cannot be checked — leave every question's correct answer as an empty string rather than guessing."
       }`,
     });
 

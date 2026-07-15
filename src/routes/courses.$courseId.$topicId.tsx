@@ -290,10 +290,15 @@ function TopicDetail() {
                 </div>
                 <ConfirmDelete
                   title={`Delete "${e.title}"?`}
-                  description="This permanently deletes the exam and its questions."
-                  onConfirm={() => {
-                    deleteExam(courseId, topicId, e.id);
-                    toast.success("Exam deleted");
+                  description="This exam will be moved to Trash and permanently deleted after 30 days unless you restore it."
+                  label="Move to Trash"
+                  onConfirm={async () => {
+                    try {
+                      await deleteExam(courseId, topicId, e.id);
+                      toast.success("Exam moved to Trash");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not delete the exam");
+                    }
                   }}
                 />
               </div>

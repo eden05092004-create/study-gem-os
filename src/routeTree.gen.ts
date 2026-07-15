@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadExamRouteImport } from './routes/upload-exam'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as TrashRouteImport } from './routes/trash'
+import { Route as SmartSchedulerRouteImport } from './routes/smart-scheduler'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as QuizRouteImport } from './routes/quiz'
@@ -48,6 +50,16 @@ const UploadExamRoute = UploadExamRouteImport.update({
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrashRoute = TrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmartSchedulerRoute = SmartSchedulerRouteImport.update({
+  id: '/smart-scheduler',
+  path: '/smart-scheduler',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -217,6 +229,8 @@ export interface FileRoutesByFullPath {
   '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/smart-scheduler': typeof SmartSchedulerRoute
+  '/trash': typeof TrashRoute
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
   '/courses/': typeof CoursesIndexRoute
@@ -247,6 +261,8 @@ export interface FileRoutesByTo {
   '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/smart-scheduler': typeof SmartSchedulerRoute
+  '/trash': typeof TrashRoute
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
   '/courses': typeof CoursesIndexRoute
@@ -280,6 +296,8 @@ export interface FileRoutesById {
   '/quiz': typeof QuizRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/smart-scheduler': typeof SmartSchedulerRoute
+  '/trash': typeof TrashRoute
   '/upload': typeof UploadRoute
   '/upload-exam': typeof UploadExamRouteWithChildren
   '/courses/': typeof CoursesIndexRoute
@@ -314,6 +332,8 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/settings'
     | '/sitemap.xml'
+    | '/smart-scheduler'
+    | '/trash'
     | '/upload'
     | '/upload-exam'
     | '/courses/'
@@ -344,6 +364,8 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/settings'
     | '/sitemap.xml'
+    | '/smart-scheduler'
+    | '/trash'
     | '/upload'
     | '/upload-exam'
     | '/courses'
@@ -376,6 +398,8 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/settings'
     | '/sitemap.xml'
+    | '/smart-scheduler'
+    | '/trash'
     | '/upload'
     | '/upload-exam'
     | '/courses/'
@@ -409,6 +433,8 @@ export interface RootRouteChildren {
   QuizRoute: typeof QuizRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SmartSchedulerRoute: typeof SmartSchedulerRoute
+  TrashRoute: typeof TrashRoute
   UploadRoute: typeof UploadRoute
   UploadExamRoute: typeof UploadExamRouteWithChildren
   CreateExamCourseIdTopicIdRoute: typeof CreateExamCourseIdTopicIdRoute
@@ -434,6 +460,20 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trash': {
+      id: '/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof TrashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/smart-scheduler': {
+      id: '/smart-scheduler'
+      path: '/smart-scheduler'
+      fullPath: '/smart-scheduler'
+      preLoaderRoute: typeof SmartSchedulerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -689,6 +729,8 @@ const rootRouteChildren: RootRouteChildren = {
   QuizRoute: QuizRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SmartSchedulerRoute: SmartSchedulerRoute,
+  TrashRoute: TrashRoute,
   UploadRoute: UploadRoute,
   UploadExamRoute: UploadExamRouteWithChildren,
   CreateExamCourseIdTopicIdRoute: CreateExamCourseIdTopicIdRoute,
@@ -702,3 +744,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

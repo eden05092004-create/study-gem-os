@@ -5,27 +5,20 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell, PageTitle } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useStore, type QuestionType } from "@/lib/store";
 import { getAiKeyStatus, parseOldExam } from "@/lib/ai.functions";
 import { extractImages, stripDataUrl } from "@/lib/extract-images";
+import { fileToBase64 } from "@/lib/files";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/upload-exam/$courseId/$topicId")({
   component: UploadExamPage,
 });
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] ?? "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+const DURATIONS = [30, 60, 90, 120] as const;
 
 function UploadExamPage() {
   const { courseId, topicId } = Route.useParams();
@@ -42,6 +35,10 @@ function UploadExamPage() {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<{ detected: number; converted: number } | null>(null);
+  const [duration, setDuration] = useState<number>(60);
+  const [customDuration, setCustomDuration] = useState("");
+  const [customDurationOn, setCustomDurationOn] = useState(false);
+  const finalDuration = customDurationOn ? Math.min(Math.max(Number(customDuration) || 0, 5), 300) : duration;
 
   useEffect(() => {
     checkStatus().then((r) => setHasKey(r.hasKey)).catch(() => setHasKey(false));
@@ -99,7 +96,7 @@ function UploadExamPage() {
         courseId,
         topicId,
         file.name.replace(/\.pdf$/i, "") || `${topic.name} — past exam`,
-        Math.max(10, Math.round(res.questions.length * 1.2)),
+        finalDuration,
         res.questions.map((q) => {
           const hasImg = q.imageIndex !== undefined && pageImages[q.imageIndex];
           return {
@@ -181,10 +178,48 @@ function UploadExamPage() {
         )}
       </Card>
 
+      <Card className="mb-4 border-none p-5">
+        <Label className="mb-2 block">Exam duration (minutes)</Label>
+        <div className="flex flex-wrap gap-2">
+          {DURATIONS.map((d) => (
+            <Button
+              key={d}
+              variant={!customDurationOn && duration === d ? "default" : "outline"}
+              className="rounded-full"
+              onClick={() => {
+                setCustomDurationOn(false);
+                setDuration(d);
+              }}
+            >
+              {d}
+            </Button>
+          ))}
+          <Button
+            variant={customDurationOn ? "default" : "outline"}
+            className="rounded-full"
+            onClick={() => setCustomDurationOn(true)}
+          >
+            Custom
+          </Button>
+        </div>
+        {customDurationOn && (
+          <Input
+            type="number"
+            min={5}
+            max={300}
+            placeholder="e.g. 45"
+            className="mt-3"
+            value={customDuration}
+            onChange={(e) => setCustomDuration(e.target.value)}
+          />
+        )}
+      </Card>
+
       <Card className="mb-4 border-none bg-muted/60 p-4 text-xs leading-relaxed text-muted-foreground">
-        Questions are reproduced <strong>exactly</strong> as written — no rewording, no fixes,
-        original typos kept. Correct answers are read only from the{" "}
-        <code>The correct answer is: [ ]</code> lines, never from student selections.
+        Your exam is reproduced exactly as written — wording and fill-in-the-blank passages are
+        never rewritten. Each missing word/phrase gets 4–8 shuffled answer choices, with the
+        correct one read from the <strong>yellow-highlighted answer</strong> in your PDF — never
+        from a student's circled or checked answer.
       </Card>
 
       {report && (

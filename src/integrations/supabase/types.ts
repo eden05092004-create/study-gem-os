@@ -124,6 +124,36 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          id: string
+          notes: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          id?: string
+          notes?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          id?: string
+          notes?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           color: string
@@ -154,6 +184,7 @@ export type Database = {
       exams: {
         Row: {
           created_at: string
+          deleted_at: string | null
           duration_min: number
           id: string
           title: string
@@ -162,6 +193,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           title: string
@@ -170,6 +202,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           title?: string
@@ -192,8 +225,11 @@ export type Database = {
           created_at: string
           id: string
           kind: string
+          lecture_id: string | null
+          mime_type: string
           name: string
           size: string
+          storage_path: string | null
           topic_id: string
           user_id: string
         }
@@ -202,8 +238,11 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          lecture_id?: string | null
+          mime_type?: string
           name: string
           size?: string
+          storage_path?: string | null
           topic_id: string
           user_id: string
         }
@@ -212,8 +251,11 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          lecture_id?: string | null
+          mime_type?: string
           name?: string
           size?: string
+          storage_path?: string | null
           topic_id?: string
           user_id?: string
         }
@@ -223,6 +265,13 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_lecture_id_fkey"
+            columns: ["lecture_id"]
+            isOneToOne: false
+            referencedRelation: "lectures"
             referencedColumns: ["id"]
           },
         ]

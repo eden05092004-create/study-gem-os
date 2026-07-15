@@ -10,7 +10,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/AppShell";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { useStore } from "@/lib/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/quiz")({
   component: QuizPage,
@@ -26,6 +28,7 @@ const MODES: { id: string; label: string; desc: string; icon: LucideIcon }[] = [
 function QuizPage() {
   const courses = useStore((s) => s.courses);
   const mistakes = useStore((s) => s.mistakes);
+  const deleteExam = useStore((s) => s.deleteExam);
   const navigate = useNavigate();
   const [mode, setMode] = useState("practice");
 
@@ -101,9 +104,24 @@ function QuizPage() {
               key={exam.id}
               className="rounded-2xl border border-border bg-card p-5"
             >
-              <span className="eyebrow">
-                {course.name} · {topic.name}
-              </span>
+              <div className="flex items-start justify-between gap-2">
+                <span className="eyebrow">
+                  {course.name} · {topic.name}
+                </span>
+                <ConfirmDelete
+                  title={`Delete "${exam.title}"?`}
+                  description="This exam will be moved to Trash and permanently deleted after 30 days unless you restore it."
+                  label="Move to Trash"
+                  onConfirm={async () => {
+                    try {
+                      await deleteExam(course.id, topic.id, exam.id);
+                      toast.success("Exam moved to Trash");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not delete the exam");
+                    }
+                  }}
+                />
+              </div>
               <h3 className="mt-1 font-display text-lg font-semibold text-foreground">
                 {exam.title}
               </h3>
