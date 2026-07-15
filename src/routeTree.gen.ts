@@ -38,6 +38,7 @@ import { Route as GenerateImageExamCourseIdTopicIdRouteImport } from './routes/g
 import { Route as GenerateExamCourseIdTopicIdRouteImport } from './routes/generate-exam.$courseId.$topicId'
 import { Route as CreateExamCourseIdTopicIdRouteImport } from './routes/create-exam.$courseId.$topicId'
 import { Route as CoursesCourseIdTopicIdRouteImport } from './routes/courses.$courseId.$topicId'
+import { Route as TeachCourseIdTopicIdFileIdRouteImport } from './routes/teach.$courseId.$topicId.$fileId'
 import { Route as NotesCourseIdTopicIdNoteIdRouteImport } from './routes/notes.$courseId.$topicId.$noteId'
 import { Route as ExamCourseIdTopicIdExamIdRouteImport } from './routes/exam.$courseId.$topicId.$examId'
 import { Route as EditNoteCourseIdTopicIdNoteIdRouteImport } from './routes/edit-note.$courseId.$topicId.$noteId'
@@ -193,6 +194,12 @@ const CoursesCourseIdTopicIdRoute = CoursesCourseIdTopicIdRouteImport.update({
   path: '/$courseId/$topicId',
   getParentRoute: () => CoursesRoute,
 } as any)
+const TeachCourseIdTopicIdFileIdRoute =
+  TeachCourseIdTopicIdFileIdRouteImport.update({
+    id: '/teach/$courseId/$topicId/$fileId',
+    path: '/teach/$courseId/$topicId/$fileId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const NotesCourseIdTopicIdNoteIdRoute =
   NotesCourseIdTopicIdNoteIdRouteImport.update({
     id: '/$courseId/$topicId/$noteId',
@@ -245,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/edit-note/$courseId/$topicId/$noteId': typeof EditNoteCourseIdTopicIdNoteIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
   '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
+  '/teach/$courseId/$topicId/$fileId': typeof TeachCourseIdTopicIdFileIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -277,6 +285,7 @@ export interface FileRoutesByTo {
   '/edit-note/$courseId/$topicId/$noteId': typeof EditNoteCourseIdTopicIdNoteIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
   '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
+  '/teach/$courseId/$topicId/$fileId': typeof TeachCourseIdTopicIdFileIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -312,6 +321,7 @@ export interface FileRoutesById {
   '/edit-note/$courseId/$topicId/$noteId': typeof EditNoteCourseIdTopicIdNoteIdRoute
   '/exam/$courseId/$topicId/$examId': typeof ExamCourseIdTopicIdExamIdRoute
   '/notes/$courseId/$topicId/$noteId': typeof NotesCourseIdTopicIdNoteIdRoute
+  '/teach/$courseId/$topicId/$fileId': typeof TeachCourseIdTopicIdFileIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/edit-note/$courseId/$topicId/$noteId'
     | '/exam/$courseId/$topicId/$examId'
     | '/notes/$courseId/$topicId/$noteId'
+    | '/teach/$courseId/$topicId/$fileId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/edit-note/$courseId/$topicId/$noteId'
     | '/exam/$courseId/$topicId/$examId'
     | '/notes/$courseId/$topicId/$noteId'
+    | '/teach/$courseId/$topicId/$fileId'
   id:
     | '__root__'
     | '/'
@@ -414,6 +426,7 @@ export interface FileRouteTypes {
     | '/edit-note/$courseId/$topicId/$noteId'
     | '/exam/$courseId/$topicId/$examId'
     | '/notes/$courseId/$topicId/$noteId'
+    | '/teach/$courseId/$topicId/$fileId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -444,6 +457,7 @@ export interface RootRouteChildren {
   WriteNoteCourseIdTopicIdRoute: typeof WriteNoteCourseIdTopicIdRoute
   EditNoteCourseIdTopicIdNoteIdRoute: typeof EditNoteCourseIdTopicIdNoteIdRoute
   ExamCourseIdTopicIdExamIdRoute: typeof ExamCourseIdTopicIdExamIdRoute
+  TeachCourseIdTopicIdFileIdRoute: typeof TeachCourseIdTopicIdFileIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -651,6 +665,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesCourseIdTopicIdRouteImport
       parentRoute: typeof CoursesRoute
     }
+    '/teach/$courseId/$topicId/$fileId': {
+      id: '/teach/$courseId/$topicId/$fileId'
+      path: '/teach/$courseId/$topicId/$fileId'
+      fullPath: '/teach/$courseId/$topicId/$fileId'
+      preLoaderRoute: typeof TeachCourseIdTopicIdFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes/$courseId/$topicId/$noteId': {
       id: '/notes/$courseId/$topicId/$noteId'
       path: '/$courseId/$topicId/$noteId'
@@ -740,6 +761,7 @@ const rootRouteChildren: RootRouteChildren = {
   WriteNoteCourseIdTopicIdRoute: WriteNoteCourseIdTopicIdRoute,
   EditNoteCourseIdTopicIdNoteIdRoute: EditNoteCourseIdTopicIdNoteIdRoute,
   ExamCourseIdTopicIdExamIdRoute: ExamCourseIdTopicIdExamIdRoute,
+  TeachCourseIdTopicIdFileIdRoute: TeachCourseIdTopicIdFileIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

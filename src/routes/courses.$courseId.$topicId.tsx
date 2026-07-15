@@ -219,6 +219,21 @@ function TopicDetail() {
                   >
                     <FileImage className="h-3.5 w-3.5" /> Image Questions
                   </Button>
+                  {f.storagePath && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-xs"
+                      onClick={() =>
+                        navigate({
+                          to: "/teach/$courseId/$topicId/$fileId",
+                          params: { courseId, topicId, fileId: f.id },
+                        })
+                      }
+                    >
+                      <GraduationCap className="h-3.5 w-3.5" /> Teach me
+                    </Button>
+                  )}
                 </div>
               </Card>
             );

@@ -114,9 +114,17 @@ async function getKey(supabase: any, userId: string): Promise<string | null> {
 }
 
 type ContentBlock =
-  | { type: "text"; text: string }
-  | { type: "document"; source: { type: "base64"; media_type: string; data: string } }
-  | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
+  | { type: "text"; text: string; cache_control?: { type: "ephemeral" } }
+  | {
+      type: "document";
+      source: { type: "base64"; media_type: string; data: string };
+      cache_control?: { type: "ephemeral" };
+    }
+  | {
+      type: "image";
+      source: { type: "base64"; media_type: string; data: string };
+      cache_control?: { type: "ephemeral" };
+    };
 
 async function callAnthropic(
   apiKey: string,
@@ -623,4 +631,340 @@ Rules:
 
     const out = await callAnthropic(key, system, content);
     return { questions: out.questions };
+  });
+
+/* ---------- lecture tutor ("Teach me this lecture") ---------- */
+
+export type TutorSection = { id: string; title: string; summary: string };
+export type TutorMessage = { role: "tutor" | "user"; content: string };
+export type TutorSession = {
+  id: string;
+  fileId: string;
+  sections: TutorSection[];
+  currentSection: number;
+  messages: TutorMessage[];
+  recap: string[] | null;
+  completed: boolean;
+};
+
+function mapTutorSession(row: {
+  id: string;
+  file_id: string;
+  sections: unknown;
+  current_section: number | null;
+  messages: unknown;
+  recap: unknown;
+  completed: boolean | null;
+}): TutorSession {
+  return {
+    id: row.id,
+    fileId: row.file_id,
+    sections: (row.sections as TutorSection[]) ?? [],
+    currentSection: row.current_section ?? 0,
+    messages: (row.messages as TutorMessage[]) ?? [],
+    recap: (row.recap as string[] | null) ?? null,
+    completed: !!row.completed,
+  };
+}
+
+const MAX_LECTURE_BYTES = 20 * 1024 * 1024;
+
+/** Downloads an uploaded file's content straight from Storage on the server (using the
+ *  caller's own authenticated client, so the same RLS/ownership rules apply as client-side)
+ *  and base64-encodes it — reused on every tutor turn since Claude calls are stateless. */
+async function fetchFileDocument(
+  supabase: any,
+  userId: string,
+  fileId: string,
+): Promise<{ data: string; mediaType: string; name: string }> {
+  const { data: file } = await supabase
+    .from("files")
+    .select("name, storage_path, mime_type")
+    .eq("id", fileId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!file?.storage_path) {
+    throw new Error("This file has no saved content to teach from.");
+  }
+  const { data: blob, error } = await supabase.storage.from("materials").download(file.storage_path);
+  if (error || !blob) {
+    throw new Error(`Could not read the file: ${error?.message ?? "unknown error"}`);
+  }
+  if (blob.size > MAX_LECTURE_BYTES) {
+    throw new Error(
+      `This file exceeds the ${(MAX_LECTURE_BYTES / 1024 / 1024).toFixed(0)}MB limit for the tutor.`,
+    );
+  }
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  return { data: buffer.toString("base64"), mediaType: file.mime_type || "application/pdf", name: file.name };
+}
+
+/** Generic schema-constrained Anthropic call, shared by the two tutor endpoints below
+ *  (mirrors callAnthropic/callAnthropicNotes but generic over the tool's return shape so a
+ *  third near-identical fetch/error-handling block doesn't need to exist). */
+async function callAnthropicTool<T>(
+  apiKey: string,
+  system: string,
+  content: ContentBlock[],
+  tool: { name: string; description: string; schema: Record<string, unknown> },
+  maxTokens: number,
+): Promise<T> {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: maxTokens,
+      system,
+      tools: [{ name: tool.name, description: tool.description, input_schema: tool.schema }],
+      tool_choice: { type: "tool", name: tool.name },
+      messages: [{ role: "user", content }],
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(
+      res.status === 401
+        ? "Invalid API key. Check your Anthropic key in Settings."
+        : `AI request failed (${res.status}): ${body.slice(0, 300)}`,
+    );
+  }
+
+  const json = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+  const toolUse = json.content?.find((c) => c.type === "tool_use");
+  if (!toolUse?.input) throw new Error("The tutor returned no response.");
+  return toolUse.input as T;
+}
+
+const TUTOR_CONTRACT = `You are a patient, expert private tutor teaching a medical student one lecture, one small section at a time. Follow these rules on every message, without exception:
+
+1. Teach ONE small, digestible section at a time — never dump the whole lecture at once.
+2. For the section's content: first explain the core concept simply and plainly. THEN add the details and small facts (exact numbers, exceptions, named things) that are easy to forget — and explicitly flag every single one on its own line as "⚠️ Easy to forget — likely on the exam: <the fact>".
+3. For the hard-to-remember details, give a genuinely useful memory aid — a mnemonic, an analogy, or a short "how to remember this" tip.
+4. After teaching a section, ask exactly 1-2 short questions that check REAL understanding of that section (not yes/no trivia). Do not advance to the next section until the student has answered acceptably — if their answer is wrong or shows a misunderstanding, re-explain the SAME point a different way (a different analogy or example, not just the same words again), then re-ask.
+5. The student can ask anything at any time — "explain again", "why?", "give me another example", or an unrelated question. Answer it directly and helpfully, and do NOT advance to the next section just because they asked something; only advance once they've actually demonstrated understanding of the CURRENT section's check question(s).
+6. Zero omission: across the whole lecture, every concept, fact, number, exception and name from the source material must eventually be taught — never silently skip something because it seems minor.
+7. When the student passes the check question(s) for the LAST section, end the session: write a compact "what to remember" recap covering every key point AND every flagged easy-to-forget detail from the entire lecture, and signal completion.
+8. Never invent facts that are not in the supplied lecture document.`;
+
+const tutorStartSchema = {
+  type: "object" as const,
+  properties: {
+    sections: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          summary: {
+            type: "string",
+            description:
+              "What this section covers, in enough detail that a later step can teach strictly from this scope alone.",
+          },
+        },
+        required: ["id", "title", "summary"],
+      },
+    },
+    firstMessage: {
+      type: "string",
+      description: "The full teaching message for section 1 only, following the tutoring rules.",
+    },
+  },
+  required: ["sections", "firstMessage"],
+};
+
+const tutorTurnSchema = {
+  type: "object" as const,
+  properties: {
+    reply: { type: "string" },
+    advanceSection: {
+      type: "boolean",
+      description:
+        "True only if the student has just demonstrated understanding of the CURRENT section's check question(s) and it's time to move on.",
+    },
+    sessionComplete: {
+      type: "boolean",
+      description: "True only when the student has just passed the check question(s) for the LAST section.",
+    },
+    recap: {
+      type: "array",
+      items: { type: "string" },
+      description:
+        "Only when sessionComplete is true: a compact 'what to remember' list covering every key point and every flagged easy-to-forget detail from the whole lecture.",
+    },
+  },
+  required: ["reply", "advanceSection", "sessionComplete"],
+};
+
+export const startLectureTutor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { fileId: string }) => {
+    if (typeof input?.fileId !== "string" || !input.fileId) throw new Error("A file is required");
+    return { fileId: input.fileId };
+  })
+  .handler(async ({ data, context }) => {
+    const key = await getKey(context.supabase, context.userId);
+    if (!key) throw new Error("AI features require an API key.");
+
+    const { data: existing } = await context.supabase
+      .from("lecture_tutor_sessions")
+      .select("*")
+      .eq("user_id", context.userId)
+      .eq("file_id", data.fileId)
+      .maybeSingle();
+    if (existing) return mapTutorSession(existing);
+
+    const file = await fetchFileDocument(context.supabase, context.userId, data.fileId);
+
+    const content: ContentBlock[] = [
+      {
+        type: "document",
+        source: { type: "base64", media_type: file.mediaType, data: file.data },
+      },
+      {
+        type: "text",
+        text: `Lecture file: "${file.name}". Build the section outline and teach the first section now.`,
+      },
+    ];
+
+    const out = await callAnthropicTool<{ sections: TutorSection[]; firstMessage: string }>(
+      key,
+      `${TUTOR_CONTRACT}
+
+For THIS message only: read the entire attached lecture document and split it into an ordered list of small, digestible sections that together cover the ENTIRE document with zero omission — every concept, fact, number, exception, and name must be assigned to exactly one section. Sections should be genuinely small (a student should absorb one in a few minutes), so a typical lecture becomes somewhere between 4 and 15 sections depending on length and density — never merge unrelated content just to make fewer sections, and never make a section so broad it stops being "one small piece at a time."
+
+Then, following rules 2-4 above, write out the FULL teaching message for the FIRST section only. Do not teach any other section yet.`,
+      content,
+      {
+        name: "save_tutor_start",
+        description: "Save the lecture's section outline and the first section's teaching message.",
+        schema: tutorStartSchema,
+      },
+      16000,
+    );
+    if (!out.sections?.length || !out.firstMessage) {
+      throw new Error("The tutor could not process this lecture. Try again.");
+    }
+
+    const { data: inserted, error } = await context.supabase
+      .from("lecture_tutor_sessions")
+      .insert({
+        user_id: context.userId,
+        file_id: data.fileId,
+        sections: out.sections,
+        current_section: 0,
+        messages: [{ role: "tutor", content: out.firstMessage }],
+      })
+      .select()
+      .single();
+    if (error || !inserted) throw new Error(error?.message ?? "Could not start the tutor session.");
+    return mapTutorSession(inserted);
+  });
+
+export const continueLectureTutor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sessionId: string; message: string }) => {
+    if (typeof input?.sessionId !== "string" || !input.sessionId) {
+      throw new Error("A tutor session is required");
+    }
+    const message = String(input?.message ?? "").trim();
+    if (!message) throw new Error("Type a message first");
+    return { sessionId: input.sessionId, message: message.slice(0, 4000) };
+  })
+  .handler(async ({ data, context }) => {
+    const key = await getKey(context.supabase, context.userId);
+    if (!key) throw new Error("AI features require an API key.");
+
+    const { data: session } = await context.supabase
+      .from("lecture_tutor_sessions")
+      .select("*")
+      .eq("id", data.sessionId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!session) throw new Error("Tutor session not found");
+    if (session.completed) throw new Error("This lecture is already complete.");
+
+    const sections = (session.sections as TutorSection[]) ?? [];
+    const messages = (session.messages as TutorMessage[]) ?? [];
+    const currentSection = session.current_section ?? 0;
+
+    const file = await fetchFileDocument(context.supabase, context.userId, session.file_id);
+
+    const outline = sections
+      .map((s, i) => `${i + 1}. ${s.title}${i === currentSection ? " (CURRENT SECTION)" : ""} — ${s.summary}`)
+      .join("\n");
+    const transcript = messages
+      .slice(-40)
+      .map((m) => `${m.role === "tutor" ? "Tutor" : "Student"}: ${m.content}`)
+      .join("\n\n");
+
+    const system = `${TUTOR_CONTRACT}
+
+Full section outline for this lecture (for your own tracking — teach naturally, don't just read this list aloud):
+${outline}
+
+You are currently on section ${currentSection + 1} of ${sections.length}: "${sections[currentSection]?.title ?? ""}".
+
+Conversation so far:
+${transcript}`;
+
+    const content: ContentBlock[] = [
+      {
+        type: "document",
+        source: { type: "base64", media_type: file.mediaType, data: file.data },
+        // Same lecture document is resent on every turn of this session (Claude calls are
+        // stateless) — cache it so a long back-and-forth doesn't reprocess it from scratch
+        // each time.
+        cache_control: { type: "ephemeral" },
+      },
+      {
+        type: "text",
+        text: `Student's new message: "${data.message}"\n\nRespond as the tutor, following the rules.`,
+      },
+    ];
+
+    const out = await callAnthropicTool<{
+      reply: string;
+      advanceSection: boolean;
+      sessionComplete: boolean;
+      recap?: string[] | null;
+    }>(
+      key,
+      system,
+      content,
+      {
+        name: "save_tutor_turn",
+        description: "Save the tutor's reply and this turn's session-progress signals.",
+        schema: tutorTurnSchema,
+      },
+      8000,
+    );
+
+    const nextMessages: TutorMessage[] = [
+      ...messages,
+      { role: "user", content: data.message },
+      { role: "tutor", content: out.reply },
+    ];
+    const nextSection = out.advanceSection ? Math.min(currentSection + 1, sections.length - 1) : currentSection;
+    const completed = !!out.sessionComplete;
+
+    const { data: updated, error } = await context.supabase
+      .from("lecture_tutor_sessions")
+      .update({
+        messages: nextMessages,
+        current_section: nextSection,
+        completed,
+        recap: completed ? (out.recap ?? []) : session.recap,
+      })
+      .eq("id", data.sessionId)
+      .select()
+      .single();
+    if (error || !updated) throw new Error(error?.message ?? "Could not save your progress.");
+    return mapTutorSession(updated);
   });
