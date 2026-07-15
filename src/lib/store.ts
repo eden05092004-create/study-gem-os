@@ -474,11 +474,29 @@ async function loadAll() {
  *  deletion and to purge anything past the 30-day retention window. */
 async function purgeExams(examIds: string[]) {
   if (examIds.length === 0) return;
-  await supabase.from("mistakes").delete().in("exam_id", examIds);
-  await supabase.from("answers").delete().in("exam_id", examIds);
-  await supabase.from("questions").delete().in("exam_id", examIds);
-  const { error } = await supabase.from("exams").delete().in("id", examIds);
-  if (error) throw error;
+  // Check each step's own error (rather than firing all three and only checking the
+  // last) so a partial failure surfaces immediately instead of silently leaving
+  // orphaned rows behind.
+  const steps = await Promise.all([
+    supabase.from("mistakes").delete().in("exam_id", examIds),
+    supabase.from("answers").delete().in("exam_id", examIds),
+    supabase.from("questions").delete().in("exam_id", examIds),
+  ]);
+  for (const s of steps) {
+    if (s.error) throw new Error(`Failed to delete exam: ${s.error.message}`);
+  }
+  const { data: deleted, error } = await supabase
+    .from("exams")
+    .delete()
+    .in("id", examIds)
+    .select("id");
+  if (error) throw new Error(`Failed to delete exam: ${error.message}`);
+  // RLS can reject a delete by silently matching zero rows instead of returning an
+  // error — checking the row count catches that instead of the exam quietly
+  // surviving and "reappearing" on the next reload.
+  if (!deleted || deleted.length !== examIds.length) {
+    throw new Error("Exam was not deleted (permission denied). Please sign out and back in.");
+  }
 }
 
 export const useStore = create<State>((set, get) => ({

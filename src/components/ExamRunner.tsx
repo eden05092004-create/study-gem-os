@@ -183,13 +183,20 @@ function BlankSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="inline-flex h-auto min-w-[9rem] max-w-full whitespace-normal rounded-lg border-input py-1.5 text-left text-sm font-medium [&>span]:line-clamp-none [&>span]:whitespace-normal">
+    // Combines both fixes for the squeezed-dropdown bug: the root cause (the
+    // shared Select's viewport height being locked to the trigger's height) is
+    // fixed once in ui/select.tsx; the classes here add a sensible explicit
+    // max-height/width cap and readability tweaks on top of that.
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="inline-flex h-auto min-h-9 w-auto min-w-[8rem] max-w-full items-start whitespace-normal rounded-lg border border-input bg-background px-2.5 py-1.5 text-left text-sm font-medium text-foreground [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words">
         <SelectValue placeholder="—" />
       </SelectTrigger>
-      <SelectContent className="max-w-[min(24rem,90vw)]">
+      <SelectContent
+        position="popper"
+        className="max-h-[60vh] w-[min(92vw,28rem)] max-w-[92vw] overflow-y-auto"
+      >
         {blank.options.map((opt, i) => (
-          <SelectItem key={i} value={opt} className="whitespace-normal break-words py-2 pr-8">
+          <SelectItem key={i} value={opt} className="whitespace-normal break-words py-2 pr-8 text-sm leading-snug">
             {opt}
           </SelectItem>
         ))}
