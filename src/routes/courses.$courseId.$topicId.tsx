@@ -291,9 +291,15 @@ function TopicDetail() {
                 <ConfirmDelete
                   title={`Delete "${e.title}"?`}
                   description="This permanently deletes the exam and its questions."
-                  onConfirm={() => {
-                    deleteExam(courseId, topicId, e.id);
-                    toast.success("Exam deleted");
+                  onConfirm={async () => {
+                    try {
+                      await deleteExam(courseId, topicId, e.id);
+                      toast.success("Exam deleted");
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error ? err.message : "Delete failed",
+                      );
+                    }
                   }}
                 />
               </div>
