@@ -380,12 +380,27 @@ Also fill "coverage" with the same coverage summary. Write the "body" of each se
     return { title: out.title, sections: out.sections, coverage: out.coverage };
   });
 
-export const getAiKeyStatus = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const key = await getKey(context.supabase, context.userId);
-    return { hasKey: !!key };
-  });
+export const getAiKeyStatus = createServerFn({ method: "GET" }).handler(
+  async () => {
+    try {
+      const { getRequestHeader } = await import("@tanstack/react-start/server");
+      const auth = getRequestHeader("authorization");
+      if (!auth) return { hasKey: false };
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_PUBLISHABLE_KEY!,
+        { global: { headers: { Authorization: auth } }, auth: { persistSession: false } },
+      );
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return { hasKey: false };
+      const key = await getKey(supabase as any, userData.user.id);
+      return { hasKey: !!key };
+    } catch {
+      return { hasKey: false };
+    }
+  },
+);
 
 export const saveAiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
