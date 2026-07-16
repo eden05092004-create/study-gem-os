@@ -70,6 +70,7 @@ export type Database = {
           created_at: string
           event_date: string
           id: string
+          notes: string | null
           title: string
           type: string
           updated_at: string
@@ -79,6 +80,7 @@ export type Database = {
           created_at?: string
           event_date: string
           id?: string
+          notes?: string | null
           title: string
           type?: string
           updated_at?: string
@@ -88,6 +90,7 @@ export type Database = {
           created_at?: string
           event_date?: string
           id?: string
+          notes?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -184,6 +187,7 @@ export type Database = {
       exams: {
         Row: {
           created_at: string
+          deleted_at: string | null
           duration_min: number
           id: string
           title: string
@@ -192,6 +196,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           title: string
@@ -200,6 +205,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           title?: string
@@ -222,8 +228,11 @@ export type Database = {
           created_at: string
           id: string
           kind: string
+          lecture_id: string | null
+          mime_type: string | null
           name: string
           size: string
+          storage_path: string | null
           topic_id: string
           user_id: string
         }
@@ -232,8 +241,11 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          lecture_id?: string | null
+          mime_type?: string | null
           name: string
           size?: string
+          storage_path?: string | null
           topic_id: string
           user_id: string
         }
@@ -242,12 +254,22 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          lecture_id?: string | null
+          mime_type?: string | null
           name?: string
           size?: string
+          storage_path?: string | null
           topic_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "files_lecture_id_fkey"
+            columns: ["lecture_id"]
+            isOneToOne: false
+            referencedRelation: "lectures"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "files_topic_id_fkey"
             columns: ["topic_id"]

@@ -1,0 +1,6 @@
+
+ALTER TABLE public.calendar_events ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS storage_path TEXT;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS mime_type TEXT;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS lecture_id UUID REFERENCES public.lectures(id) ON DELETE SET NULL;
