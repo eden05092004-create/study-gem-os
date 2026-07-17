@@ -194,6 +194,15 @@ function BlankSelect({
       <SelectContent
         position="popper"
         className="max-h-[60vh] w-[min(92vw,28rem)] max-w-[92vw] overflow-y-auto"
+        ref={(node) => {
+          // iOS/iPadOS fires a synthetic click on touchend at the release point.
+          // When Radix opens the menu above the trigger (data-side=top), that
+          // click lands on whichever SelectItem is now under the finger and
+          // instantly picks it, so the dropdown appears to "open then close".
+          // Swallowing touchend inside the content prevents that ghost click.
+          if (!node) return;
+          node.ontouchend = (e) => e.preventDefault();
+        }}
       >
         {blank.options.map((opt, i) => (
           <SelectItem key={i} value={opt} className="whitespace-normal break-words py-2 pr-8 text-sm leading-snug">
