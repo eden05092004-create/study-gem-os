@@ -635,11 +635,10 @@ export const parseOldExam = createServerFn({ method: "POST" })
     });
 
     const out = await callAnthropic(key, system, content);
-    const questions = await ensureOldExamOptions(key, out.questions);
     return {
-      questions,
-      detected: out.detected ?? questions.length,
-      converted: out.converted ?? questions.length,
+      questions: out.questions,
+      detected: out.detected ?? out.questions.length,
+      converted: out.converted ?? out.questions.length,
     };
   });
 
