@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Flag,
@@ -408,6 +408,62 @@ function QuestionBody({
   );
 }
 
+/** Defined at module scope (not inline in ExamRunner's render) so React keeps
+ *  the same component identity across renders — including the once-per-second
+ *  re-renders from the countdown timer. An inline definition would be a new
+ *  component type on every render, forcing React to unmount/remount the whole
+ *  subtree (including any open BlankSelect dropdown) instead of reconciling it. */
+function QuestionCard({
+  question,
+  index,
+  layout,
+  flags,
+  setFlags,
+  answers,
+  setAnswers,
+}: {
+  question: Question;
+  index: number;
+  layout: Layout;
+  flags: Record<string, boolean>;
+  setFlags: Dispatch<SetStateAction<Record<string, boolean>>>;
+  answers: Record<string, string>;
+  setAnswers: Dispatch<SetStateAction<Record<string, string>>>;
+}) {
+  return (
+    <Card className="soft-shadow mb-5 border-none p-5">
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <p className="text-lg font-bold leading-snug text-foreground">
+          {layout === "all" && <span className="mr-1 text-muted-foreground">{index + 1}.</span>}
+          {question.type === "cloze"
+            ? "Fill in the blanks"
+            : question.type === "matching"
+              ? question.text || "Match each item"
+              : question.type === "truefalse"
+                ? question.text || "Mark each statement True or False"
+                : question.text}
+        </p>
+        <button
+          onClick={() => setFlags((f) => ({ ...f, [question.id]: !f[question.id] }))}
+          className={cn(
+            "shrink-0 rounded-full p-2 transition-colors",
+            flags[question.id] ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground",
+          )}
+          aria-label="Flag question for review"
+        >
+          <Flag className="h-4 w-4" />
+        </button>
+      </div>
+
+      <QuestionBody
+        q={question}
+        answers={answers}
+        setAnswer={(blankId, v) => setAnswers((a) => ({ ...a, [`${question.id}:${blankId}`]: v }))}
+      />
+    </Card>
+  );
+}
+
 export function ExamRunner({
   title,
   questions,
@@ -697,39 +753,6 @@ export function ExamRunner({
   const isAnswered = (question: Question) =>
     question.blanks.some((b) => answers[`${question.id}:${b.id}`] !== undefined);
 
-  const QuestionCard = ({ question, index }: { question: Question; index: number }) => (
-    <Card className="soft-shadow mb-5 border-none p-5">
-      <div className="mb-4 flex items-start justify-between gap-2">
-        <p className="text-lg font-bold leading-snug text-foreground">
-          {layout === "all" && <span className="mr-1 text-muted-foreground">{index + 1}.</span>}
-          {question.type === "cloze"
-            ? "Fill in the blanks"
-            : question.type === "matching"
-              ? question.text || "Match each item"
-              : question.type === "truefalse"
-                ? question.text || "Mark each statement True or False"
-                : question.text}
-        </p>
-        <button
-          onClick={() => setFlags((f) => ({ ...f, [question.id]: !f[question.id] }))}
-          className={cn(
-            "shrink-0 rounded-full p-2 transition-colors",
-            flags[question.id] ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground",
-          )}
-          aria-label="Flag question for review"
-        >
-          <Flag className="h-4 w-4" />
-        </button>
-      </div>
-
-      <QuestionBody
-        q={question}
-        answers={answers}
-        setAnswer={(blankId, v) => setAnswers((a) => ({ ...a, [`${question.id}:${blankId}`]: v }))}
-      />
-    </Card>
-  );
-
   return (
     <div className="pt-1">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -816,9 +839,28 @@ export function ExamRunner({
       )}
 
       {layout === "single" ? (
-        <QuestionCard question={q} index={current} />
+        <QuestionCard
+          question={q}
+          index={current}
+          layout={layout}
+          flags={flags}
+          setFlags={setFlags}
+          answers={answers}
+          setAnswers={setAnswers}
+        />
       ) : (
-        questions.map((question, i) => <QuestionCard key={question.id} question={question} index={i} />)
+        questions.map((question, i) => (
+          <QuestionCard
+            key={question.id}
+            question={question}
+            index={i}
+            layout={layout}
+            flags={flags}
+            setFlags={setFlags}
+            answers={answers}
+            setAnswers={setAnswers}
+          />
+        ))
       )}
 
       {layout === "single" ? (
