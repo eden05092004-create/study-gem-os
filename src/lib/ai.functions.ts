@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ensureOldExamOptions } from "@/lib/old-exam-options.server";
+
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-5";
@@ -141,11 +141,9 @@ async function callAnthropic(
     },
     body: JSON.stringify({
       model: MODEL,
-      // Generous headroom: a single exam can have 50-100+ blanks, and rule 4 below
-      // requires 4-8 full options plus one explanation sentence per option for EACH
-      // blank — that easily exceeds 8000 tokens and previously caused the model to
-      // silently degrade to a single option per blank to fit the budget.
-      max_tokens: 64000,
+      // Streamed so Cloudflare's ~100s idle-timeout doesn't 524 on long exams.
+      stream: true,
+      max_tokens: 32000,
       system,
       tools: [
         {
@@ -159,8 +157,8 @@ async function callAnthropic(
     }),
   });
 
-  if (!res.ok) {
-    const body = await res.text();
+  if (!res.ok || !res.body) {
+    const body = await res.text().catch(() => "");
     throw new Error(
       res.status === 401
         ? "Invalid API key. Check your Anthropic key in Settings."
@@ -168,21 +166,64 @@ async function callAnthropic(
     );
   }
 
-  const json = (await res.json()) as {
-    content?: { type: string; input?: unknown }[];
-  };
-  const toolUse = json.content?.find((c) => c.type === "tool_use");
-  if (!toolUse?.input) throw new Error("The AI returned no questions.");
-  const out = toolUse.input as {
-    questions?: AiQuestion[];
-    detected?: number;
-    converted?: number;
-  };
+  const toolJson = await readToolUseJson(res.body);
+  if (!toolJson) throw new Error("The AI returned no questions.");
+  let out: { questions?: AiQuestion[]; detected?: number; converted?: number };
+  try {
+    out = JSON.parse(toolJson);
+  } catch {
+    throw new Error("The AI returned malformed output.");
+  }
   return {
     questions: out.questions ?? [],
     detected: out.detected,
     converted: out.converted,
   };
+}
+
+/** Reads an Anthropic SSE stream and concatenates the `input_json_delta` chunks
+ *  of the tool_use content block into a full JSON string. */
+async function readToolUseJson(body: ReadableStream<Uint8Array>): Promise<string | null> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let json = "";
+  let inToolBlock = false;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf("\n")) !== -1) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const evt = JSON.parse(payload) as {
+          type?: string;
+          content_block?: { type?: string };
+          delta?: { type?: string; partial_json?: string };
+        };
+        if (evt.type === "content_block_start") {
+          inToolBlock = evt.content_block?.type === "tool_use";
+        } else if (
+          inToolBlock &&
+          evt.type === "content_block_delta" &&
+          evt.delta?.type === "input_json_delta" &&
+          typeof evt.delta.partial_json === "string"
+        ) {
+          json += evt.delta.partial_json;
+        } else if (evt.type === "content_block_stop") {
+          inToolBlock = false;
+        }
+      } catch {
+        // ignore malformed SSE lines
+      }
+    }
+  }
+  return json || null;
 }
 
 export type AiNoteSection = {
@@ -594,11 +635,10 @@ export const parseOldExam = createServerFn({ method: "POST" })
     });
 
     const out = await callAnthropic(key, system, content);
-    const questions = await ensureOldExamOptions(key, out.questions);
     return {
-      questions,
-      detected: out.detected ?? questions.length,
-      converted: out.converted ?? questions.length,
+      questions: out.questions,
+      detected: out.detected ?? out.questions.length,
+      converted: out.converted ?? out.questions.length,
     };
   });
 
