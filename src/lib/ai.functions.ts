@@ -627,7 +627,7 @@ export const parseOldExam = createServerFn({ method: "POST" })
     });
     content.push({
       type: "text",
-      text: `Extract all questions from this exam following the rules exactly. Preserve every fill-in-the-blank passage exactly as written — do not rewrite it into a standalone question. For each blank, find the YELLOW-HIGHLIGHTED answer on its page image — that is the only valid source for the correct answer — then build out 4-8 randomized, scientifically accurate options for that blank with one explanation per option covering why it's right or wrong.${
+      text: `Extract all questions from this exam following the rules exactly. Preserve each question's ORIGINAL TYPE and wording — cloze stays cloze, mcq stays mcq, true/false stays truefalse, open questions stay "short" with EMPTY options. For each blank, find the YELLOW-HIGHLIGHTED answer on its page image. For cloze/mcq/matching blanks, build 4-8 randomized scientifically accurate options with one explanation per option. For truefalse blanks use exactly ["True","False"]. For short/open blanks leave options empty.${
         hasImages
           ? " The images after the document are the page renders, indexed from 0 in order — use them to locate the yellow highlight for every question, and reference them via imageIndex when a question uses a figure."
           : " No page images were supplied, so highlight color cannot be checked — leave every question's correct answer as an empty string rather than guessing."
