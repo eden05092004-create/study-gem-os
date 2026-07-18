@@ -562,6 +562,27 @@ export function ExamRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerMode, phase, q.id, pqDeadlines[q.id]]);
 
+  const restart = () => {
+    submittedRef.current = false;
+    setAnswers({});
+    setFlags({});
+    setCurrent(0);
+    setPqDeadlines({});
+    clearJSONRecord(answersStorageKey);
+    clearJSONRecord(flagsStorageKey);
+    clearDeadline(storageKey);
+    clearDeadline(pqStorageKey);
+    if (timer?.mode === "total") {
+      const totalSec = Math.round(timer.totalMinutes * 60);
+      const deadline = Date.now() + totalSec * 1000;
+      writeDeadline(storageKey, deadline);
+      setRemainingSec(totalSec);
+    } else {
+      setRemainingSec(0);
+    }
+    setPhase("quiz");
+  };
+
   if (phase === "results") {
     return (
       <div className="space-y-4 pt-2">
@@ -572,6 +593,13 @@ export function ExamRunner({
             Mark {totals.earned.toFixed(1)} out of {totals.total.toFixed(1)}
           </p>
           <p className="text-xs text-muted-foreground">{title}</p>
+          <Button
+            onClick={restart}
+            variant="outline"
+            className="mt-4 rounded-full"
+          >
+            <RotateCcw className="h-4 w-4" /> Start exam again
+          </Button>
         </Card>
 
         {questions.map((question, qi) => {
