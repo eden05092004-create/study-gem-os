@@ -711,9 +711,14 @@ export function ExamRunner({
           );
         })}
 
-        <Button asChild className="w-full rounded-full">
-          <Link to="/exams">Finish</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={restart} variant="outline" className="flex-1 rounded-full">
+            <RotateCcw className="h-4 w-4" /> Start again
+          </Button>
+          <Button asChild className="flex-1 rounded-full">
+            <Link to="/exams">Finish</Link>
+          </Button>
+        </div>
       </div>
     );
   }
