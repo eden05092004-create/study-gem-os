@@ -580,38 +580,38 @@ export const parseOldExam = createServerFn({ method: "POST" })
     if (!key) throw new Error("AI features require an API key.");
 
     const hasImages = data.images.length > 0;
-    const system = `You convert an EXISTING exam PDF into an interactive practice exam that is AS CLOSE AS POSSIBLE to the original. The only thing you add is answer choices for each missing word/phrase — you do not rewrite, restructure, or simplify anything else. CRITICAL RULES — follow exactly:
+    const system = `You convert an EXISTING exam PDF into an interactive practice exam that is AS CLOSE AS POSSIBLE to the original. Preserve BOTH the exact wording AND the exact question TYPE of every original question. CRITICAL RULES — follow exactly:
 
-1. REPRODUCE THE QUESTION/PASSAGE EXACTLY: copy every question, passage and surrounding text EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", normalize, or restructure the wording — change it only if absolutely unavoidable to represent a blank (rule 2). Keep original typos, punctuation, casing and spacing.
+1. REPRODUCE THE QUESTION/PASSAGE EXACTLY: copy every question, passage and surrounding text EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", normalize, or restructure the wording. Keep original typos, punctuation, casing and spacing.
 
-2. A MISSING WORD/PHRASE STAYS A CLOZE BLANK — THIS IS THE DEFAULT: if the original question has a gap (a blank line, underline, ellipsis, bracket, or similar missing word/phrase within a sentence or passage), you MUST preserve that exact structure as a "cloze" question. Keep the surrounding sentence/passage text EXACTLY as in the source, and replace ONLY the missing word/phrase with a token [[1]], [[2]], … in reading order (one token per blank). Do NOT reveal the answer in the passage text, and do NOT turn the passage into a differently-worded standalone question. A passage can contain multiple blanks — keep them all as ONE "cloze" question; never split a passage into separate questions.
-   - Use "mcq" ONLY when the source itself already presents a standalone question with its own visible answer options (a genuine multiple-choice question, not a fill-in-the-blank) — and even then, copy the stem exactly as rule 1 requires.
-   - Use "matching"/"truefalse"/"short" only when the source is unambiguously that format.
+2. PRESERVE THE ORIGINAL QUESTION TYPE — never convert one format into another:
+   - CLOZE (fill-in-the-blank): the source has a gap (blank line, underline, ellipsis, bracket) inside a sentence/passage. Keep the surrounding text EXACTLY and replace ONLY the missing word/phrase with a token [[1]], [[2]], … in reading order. A passage with multiple blanks stays ONE cloze question. Do NOT reveal the answer inside the passage text.
+   - MCQ: the source itself presents a standalone question with its own visible answer choices (A/B/C/D or similar). Copy the stem and choices exactly.
+   - TRUE/FALSE: the source presents statement(s) to be marked True or False (single statement, or a list/table of statements). Use type "truefalse", one blank per statement, blank.label = the statement copied verbatim, options = ["True","False"], correct = whichever the answer key marks.
+   - SHORT / OPEN QUESTIONS: the source asks an open-ended question expecting a written free-text answer with no choices in the source. Use type "short", one blank, options[] EMPTY, correct = the answer from the answer key (verbatim if given, otherwise a concise correct answer). Do NOT invent multiple-choice options for an open question.
+   - MATCHING: the source explicitly asks to match items to descriptions. Use type "matching".
+   Never change a short/open question into an MCQ, never change a true/false into a cloze, never split a multi-blank cloze into separate questions. The reader must see the same question format as in the original exam.
 
-3. CORRECT ANSWER SOURCE — VISUAL, FROM THE PAGE IMAGE: this is the single most important rule. The rasterized page images supplied after the document are REQUIRED grading input, not optional illustration. For each blank/question, look at its page image and find the YELLOW-HIGHLIGHTED answer in the answer box/key (often at the bottom of the page or exam) — a yellow marker/highlighter box or fill over the correct word, phrase, or option. That highlighted text is the correct answer, copied EXACTLY as highlighted.
-   - NEVER use a bracketed "[X]" text line as the answer source.
-   - NEVER use a student's circled answer, checkmark, handwritten mark, or any non-yellow annotation — those may be WRONG (a student's mistake) and must be ignored as answer signals.
-   - NEVER guess the correct answer from your own knowledge of the subject.
-   - If a blank genuinely has no yellow highlight visible anywhere, leave its "correct" as an empty string rather than guessing.
+3. CORRECT ANSWER SOURCE — VISUAL, FROM THE PAGE IMAGE: the rasterized page images supplied after the document are REQUIRED grading input. For each blank/question, find the YELLOW-HIGHLIGHTED answer in the answer box/key (often at the bottom of the page or exam). That highlighted text is the correct answer, copied EXACTLY as highlighted.
+   - NEVER use a student's circled answer, checkmark, or handwritten mark — those may be WRONG and must be ignored.
+   - NEVER guess the correct answer from your own knowledge.
+   - If no yellow highlight exists for a blank, leave its "correct" as an empty string.
 
-4. GIVE EVERY BLANK 4-8 OPTIONS — NO EXCEPTIONS, EVEN IN LARGE EXAMS: for each blank — whether it's a cloze token or an mcq's single blank — build a set of 4 to 8 multiple-choice options: the real answer (from the yellow highlight, worded EXACTLY as highlighted) plus realistic distractors to fill out the set. A blank whose options[] has fewer than 4 entries (e.g. just the correct answer alone) is INVALID OUTPUT — this rule applies identically whether the exam has 5 blanks or 100; never shorten, skip, or thin out distractors/explanations to save space or move faster. You have a large output budget — use it. Distractors must be:
-   - Scientifically/medically ACCURATE as statements in their own right (a true fact about a related-but-wrong concept), not fabricated nonsense — the error must be that they don't answer THIS blank, not that they're false in general.
-   - Plausible and topic-relevant — something a student who half-understands the material could believably pick — never an obviously-wrong throwaway option.
-   - Distinct from each other and from the correct answer — no near-duplicates, no options trivially eliminable by wording alone.
-   - Matched in length/register to the real answer so it doesn't visually stand out.
-   - If the source already shows 4-8 options for that blank, keep the real ones as written and add distractors only if truly short of 4.
+4. OPTIONS RULES BY TYPE:
+   - CLOZE and MCQ blanks: give every blank 4-8 options — the real answer (from the yellow highlight, verbatim) plus realistic distractors. Distractors must be scientifically accurate as standalone facts, plausible, distinct, and matched in length/register to the real answer. If the source already shows options, keep those and only top up if fewer than 4.
+   - TRUEFALSE blanks: options must be exactly ["True","False"].
+   - SHORT blanks: options[] MUST be empty — do not fabricate choices for an open question.
+   - MATCHING blanks: options are the candidate descriptions.
 
-5. PER-BLANK EXPLANATIONS — REQUIRED, even though the source has none, for EVERY blank in the exam with no exceptions for large exams: for every blank, fill blanks[].explanations[] with exactly one entry per option, in the SAME ORDER as that blank's options[]. Each entry is 1-2 sentences of accurate rationale for why that specific option is correct or incorrect for this blank. Write these yourself from your medical knowledge — this is the one place you add content beyond pure transcription, and it must be scientifically accurate. Do not omit explanations for later questions to save space — every blank gets them, from the first question to the last.
+5. PER-BLANK EXPLANATIONS — REQUIRED for every blank that has options (cloze, mcq, truefalse, matching): fill blanks[].explanations[] with exactly one entry per option, in the SAME ORDER as options[]. Each entry is 1-2 sentences of accurate rationale for why that option is correct or incorrect for this blank. Short-answer blanks (no options) do not need explanations.
 
-6. RANDOMIZE OPTION ORDER PER BLANK: list each blank's options[] (and its matching explanations[], kept in the same order) in randomized order — not answer-first, not source order — so the correct answer isn't always in the same position. This is safe: grading matches by value, not position.
+6. RANDOMIZE OPTION ORDER for cloze/mcq/matching blanks (keep explanations aligned). Do NOT randomize the ["True","False"] pair.
 
-7. PARTIAL CREDIT: each blank counts as 1 point, so include every blank in a passage-style question.
+7. PARTIAL CREDIT: each blank counts as 1 point; include every blank.
 
-8. Non-cloze/non-mcq formats (rare): "matching" (one blank per item, label = item, options = candidate descriptions), "truefalse" (one blank per statement, label = statement, options ["True","False"]) — only when the source is unambiguously that format. NEVER use type "short" and NEVER leave a blank's options[] empty — every single blank in the exam, with zero exceptions, gets 4-8 options per rule 4. If a blank looks like open-ended free text in the source, it still gets converted into a 4-8-option choice using rule 4's process.
+8. IMAGES: if a question refers to a figure/diagram in the material, KEEP the image via imageIndex (0-based index of the supplied page images). For "identify the numbered structures" questions use type "image_identify" with imageLabels (id matching the blank id, x/y normalized 0..1). Never invent images not in the source.
 
-9. IMAGES: if a question refers to a figure/diagram shown in the material, KEEP the image. Page images are supplied in order starting at index 0. Set imageIndex to the index of the page image that contains the figure for that question. When the original question asks to identify numbered structures on the figure, use type "image_identify" and supply imageLabels (id must match the blank id, x/y normalized 0..1). Never invent images that are not in the source.
-
-10. COMPLETENESS: report "detected" = number of questions found in the document, and "converted" = number successfully converted with a usable structure. These should match when everything converts.`;
+9. COMPLETENESS: report "detected" = number of questions found, "converted" = number successfully converted. These should match.`;
 
     const content: ContentBlock[] = [
       {
@@ -627,7 +627,7 @@ export const parseOldExam = createServerFn({ method: "POST" })
     });
     content.push({
       type: "text",
-      text: `Extract all questions from this exam following the rules exactly. Preserve every fill-in-the-blank passage exactly as written — do not rewrite it into a standalone question. For each blank, find the YELLOW-HIGHLIGHTED answer on its page image — that is the only valid source for the correct answer — then build out 4-8 randomized, scientifically accurate options for that blank with one explanation per option covering why it's right or wrong.${
+      text: `Extract all questions from this exam following the rules exactly. Preserve each question's ORIGINAL TYPE and wording — cloze stays cloze, mcq stays mcq, true/false stays truefalse, open questions stay "short" with EMPTY options. For each blank, find the YELLOW-HIGHLIGHTED answer on its page image. For cloze/mcq/matching blanks, build 4-8 randomized scientifically accurate options with one explanation per option. For truefalse blanks use exactly ["True","False"]. For short/open blanks leave options empty.${
         hasImages
           ? " The images after the document are the page renders, indexed from 0 in order — use them to locate the yellow highlight for every question, and reference them via imageIndex when a question uses a figure."
           : " No page images were supplied, so highlight color cannot be checked — leave every question's correct answer as an empty string rather than guessing."
