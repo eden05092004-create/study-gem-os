@@ -492,6 +492,20 @@ function sanitizeImages(input: unknown): AiImageInput[] {
     .map((im) => ({ data: im.data, mediaType: im.mediaType }));
 }
 
+/** Same shape as sanitizeImages but with a higher cap — used for parseOldExam's
+ *  rendered page images, where every page can matter for fidelity (missed later
+ *  pages means missed questions or a missed answer-key highlight). */
+function sanitizePageImages(input: unknown): AiImageInput[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(
+      (im): im is AiImageInput =>
+        !!im && typeof im.data === "string" && typeof im.mediaType === "string",
+    )
+    .slice(0, 40)
+    .map((im) => ({ data: im.data, mediaType: im.mediaType }));
+}
+
 function sanitizeDocuments(input: unknown): AiImageInput[] {
   if (!Array.isArray(input)) return [];
   return input
@@ -562,16 +576,150 @@ Format rules per type:
     return { questions: out.questions };
   });
 
+/** Structural fidelity checks run against the AI's own output — never against the
+ *  PDF itself (we have no independent ground truth), but enough to catch the most
+ *  common ways an extraction violates the "never fabricate, never partially import"
+ *  contract before it ever reaches the student. Returns a human-readable violation
+ *  per problem found; an empty array means the output passed. */
+function validateParsedExam(
+  out: { questions: AiQuestion[]; detected?: number; converted?: number },
+  imageCount: number,
+  expectedApprox: number,
+): string[] {
+  const issues: string[] = [];
+  const { questions } = out;
+
+  if (questions.length === 0) issues.push("No questions were extracted at all.");
+  if (out.detected !== undefined && out.converted !== undefined && out.detected !== out.converted) {
+    issues.push(
+      `You reported ${out.detected} questions detected but only ${out.converted} converted — every detected question must be converted, nothing may be dropped.`,
+    );
+  }
+  if (expectedApprox > 0 && questions.length < expectedApprox * 0.6) {
+    issues.push(
+      `A page scan suggests roughly ${expectedApprox}+ numbered questions in this exam, but only ${questions.length} were returned — re-check every page for questions you missed, including later pages.`,
+    );
+  }
+
+  questions.forEach((q, qi) => {
+    const label = `Question ${qi + 1} (type "${q.type}")`;
+    if (!q.blanks || q.blanks.length === 0) {
+      issues.push(`${label}: has no blanks/answers at all.`);
+      return;
+    }
+    q.blanks.forEach((b, bi) => {
+      const opts = b.options ?? [];
+      if (opts.length === 1) {
+        issues.push(
+          `${label} blank ${bi + 1}: has exactly one option — a real question either offers no options (free text) or 2+ genuine choices from the source; never fabricate a single filler option.`,
+        );
+      }
+      if (opts.length > 0 && b.correct && !opts.includes(b.correct)) {
+        issues.push(
+          `${label} blank ${bi + 1}: correct answer "${b.correct}" is not one of its own listed options.`,
+        );
+      }
+    });
+    if (q.type === "truefalse") {
+      q.blanks.forEach((b, bi) => {
+        const opts = (b.options ?? []).map((o) => o.trim().toLowerCase());
+        if (opts.length !== 2 || !opts.includes("true") || !opts.includes("false")) {
+          issues.push(
+            `${label} blank ${bi + 1}: truefalse options must be exactly ["True","False"], nothing else.`,
+          );
+        }
+      });
+    }
+    if (q.type === "mcq") {
+      if (q.blanks.length !== 1) {
+        issues.push(`${label}: mcq must have exactly one blank holding its own answer choices.`);
+      } else if ((q.blanks[0].options ?? []).length < 2) {
+        issues.push(
+          `${label}: mcq must have at least 2 real answer choices copied from the source.`,
+        );
+      }
+    }
+    if (q.type === "short" && (q.blanks.length !== 1 || (q.blanks[0].options ?? []).length > 0)) {
+      issues.push(
+        `${label}: short/open questions must have exactly one blank with NO options — it is free text.`,
+      );
+    }
+    if (q.type === "matching" && q.blanks.some((b) => (b.options ?? []).length < 2)) {
+      issues.push(
+        `${label}: every matching item needs its candidate descriptions copied from the source.`,
+      );
+    }
+    if (q.type.startsWith("image")) {
+      if (imageCount === 0) {
+        issues.push(
+          `${label}: is an image question but no page images were supplied — never invent an image question without a real source image.`,
+        );
+      } else if (q.imageIndex === undefined || q.imageIndex < 0 || q.imageIndex >= imageCount) {
+        issues.push(
+          `${label}: imageIndex ${q.imageIndex} does not point at a real supplied page image (valid range 0-${imageCount - 1}).`,
+        );
+      }
+    }
+  });
+
+  return issues;
+}
+
+const MAX_PARSE_ATTEMPTS = 3;
+
+/** Calls the AI, validates the result structurally, and retries with corrective
+ *  feedback on failure — up to MAX_PARSE_ATTEMPTS. Never returns a result that
+ *  failed validation; the caller must treat a thrown error as "nothing importable
+ *  was produced," never save a partial result. */
+async function parseExamWithRetry(
+  apiKey: string,
+  system: string,
+  baseContent: ContentBlock[],
+  imageCount: number,
+  expectedApprox: number,
+): Promise<{ questions: AiQuestion[]; detected?: number; converted?: number }> {
+  let issues: string[] = [];
+  for (let attempt = 1; attempt <= MAX_PARSE_ATTEMPTS; attempt++) {
+    const content: ContentBlock[] = issues.length
+      ? [
+          ...baseContent,
+          {
+            type: "text",
+            text: `Your previous attempt broke these fidelity rules — re-extract the ENTIRE exam from scratch, fix every issue below, and do not repeat them:\n${issues
+              .slice(0, 12)
+              .map((i) => `- ${i}`)
+              .join("\n")}`,
+          },
+        ]
+      : baseContent;
+
+    const out = await callAnthropic(apiKey, system, content);
+    issues = validateParsedExam(out, imageCount, expectedApprox);
+    if (issues.length === 0) return out;
+  }
+  throw new Error(
+    `Could not faithfully extract this exam after ${MAX_PARSE_ATTEMPTS} attempts, so nothing was imported. Problems found: ${issues
+      .slice(0, 4)
+      .join("; ")}.`,
+  );
+}
+
 export const parseOldExam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { pdfBase64: string; mediaType?: string; images?: AiImageInput[] }) => {
+    (input: {
+      pdfBase64: string;
+      mediaType?: string;
+      images?: AiImageInput[];
+      expectedApprox?: number;
+    }) => {
       if (typeof input?.pdfBase64 !== "string" || !input.pdfBase64)
         throw new Error("A PDF is required");
       return {
         pdfBase64: input.pdfBase64,
         mediaType: input.mediaType || "application/pdf",
-        images: sanitizeImages(input.images),
+        images: sanitizePageImages(input.images),
+        expectedApprox: Math.max(0, Math.min(500, Number(input.expectedApprox) || 0)),
       };
     },
   )
@@ -580,38 +728,42 @@ export const parseOldExam = createServerFn({ method: "POST" })
     if (!key) throw new Error("AI features require an API key.");
 
     const hasImages = data.images.length > 0;
-    const system = `You convert an EXISTING exam PDF into an interactive practice exam that is AS CLOSE AS POSSIBLE to the original. Preserve BOTH the exact wording AND the exact question TYPE of every original question. CRITICAL RULES — follow exactly:
+    const system = `You convert an EXISTING exam PDF into an interactive digital exam that reproduces the original with MAXIMUM FIDELITY. You are a faithful transcriber, never an author: never simplify, rewrite, summarize, interpret, infer, or redesign anything the exam contains. The student must feel they are solving the original exam, not an AI-generated one.
 
-1. REPRODUCE THE QUESTION/PASSAGE EXACTLY: copy every question, passage and surrounding text EXACTLY as written. Do NOT reword, translate, fix grammar, "improve", normalize, or restructure the wording. Keep original typos, punctuation, casing and spacing.
+CLASSIFY BY STRUCTURE, NOT KEYWORDS: decide each question's type from the PDF's actual layout — numbering style, indentation, whether an answer bank/word list is printed, checkbox/circle/table layout, presence of an image — never by pattern-matching words in the question text.
 
-2. PRESERVE THE ORIGINAL QUESTION TYPE — never convert one format into another:
-   - CLOZE (fill-in-the-blank): the source has a gap (blank line, underline, ellipsis, bracket) inside a sentence/passage. Keep the surrounding text EXACTLY and replace ONLY the missing word/phrase with a token [[1]], [[2]], … in reading order. A passage with multiple blanks stays ONE cloze question. Do NOT reveal the answer inside the passage text.
-   - MCQ: the source itself presents a standalone question with its own visible answer choices (A/B/C/D or similar). Copy the stem and choices exactly.
-   - TRUE/FALSE: the source presents statement(s) to be marked True or False (single statement, or a list/table of statements). Use type "truefalse", one blank per statement, blank.label = the statement copied verbatim, options = ["True","False"], correct = whichever the answer key marks.
-   - SHORT / OPEN QUESTIONS: the source asks an open-ended question expecting a written free-text answer with no choices in the source. Use type "short", one blank, options[] EMPTY, correct = the answer from the answer key (verbatim if given, otherwise a concise correct answer). Do NOT invent multiple-choice options for an open question.
-   - MATCHING: the source explicitly asks to match items to descriptions. Use type "matching".
-   Never change a short/open question into an MCQ, never change a true/false into a cloze, never split a multi-blank cloze into separate questions. The reader must see the same question format as in the original exam.
+0. NEVER GUESS: if you cannot confidently read a word, an image, or an answer, do NOT invent, paraphrase, or infer a replacement — leave that field empty/unset rather than fabricate. It is far better to leave a "correct" answer blank than to guess wrong.
 
-3. CORRECT ANSWER SOURCE — VISUAL, FROM THE PAGE IMAGE: the rasterized page images supplied after the document are REQUIRED grading input. For each blank/question, find the YELLOW-HIGHLIGHTED answer in the answer box/key (often at the bottom of the page or exam). That highlighted text is the correct answer, copied EXACTLY as highlighted.
+1. REPRODUCE EVERYTHING EXACTLY: copy every question, instruction, title, subtitle, section heading, passage, and answer option EXACTLY as written — every word, sentence, punctuation mark and number. Do NOT reword, translate, fix grammar or spelling, "improve", normalize, or restructure wording, even where the original contains a mistake. Preserve the original question order.
+
+2. PRESERVE THE ORIGINAL QUESTION TYPE — never convert one interaction into another:
+   - CLOZE / FILL-IN-THE-BLANK: the source has a gap (blank line, underline, ellipsis, bracket) inside a sentence/passage. Keep the surrounding text EXACTLY and replace ONLY the missing word/phrase with a token [[1]], [[2]], … in reading order. A passage with several blanks stays ONE cloze question — never split it, never merge separate blanks into one, never drop a blank.
+     - If the source prints an answer bank / word list for these blanks, every blank's options = those exact words, verbatim, and becomes a dropdown.
+     - If the source gives NO answer bank (just a blank line, with the answer only in a separate answer key), leave that blank's options[] EMPTY — it is a free-text fill-in, not a fabricated multiple-choice. Never invent distractor options that are not in the source.
+   - MCQ: the source itself presents a standalone question with its own visible answer choices (A/B/C/D or similar). Copy the stem and every choice exactly, in the original order, with nothing added, removed, or shortened. Only reorder options if the source itself indicates the choices are randomized per student.
+   - TRUE/FALSE: the source presents one or more statements to be marked True/False. Use type "truefalse", one blank per statement (so a block of several True/False statements — "Multi True/False" — stays multiple blanks in ONE question, each with its own independent answer), blank.label = the statement copied verbatim, options = exactly ["True","False"], correct = whichever the answer key marks.
+   - OPEN / SHORT QUESTIONS: use type "short" ONLY for a question that is genuinely open-ended in the source (no choices, no answer bank). One blank, options[] EMPTY, correct = the answer key's text verbatim if given. Never convert a question that has a real answer bank or figure-based dropdown into "short" just because it looks open-ended — having an image does NOT make a question open-ended.
+   - MATCHING: the source explicitly asks to match items to descriptions/terms. Use type "matching", one blank per item to match, blank.label = the item, options = every candidate description exactly as printed (same set for every blank in that question unless the source restricts them), correct = the right match. Never convert matching into open questions, fill-in-the-blank, or multiple choice.
+   - DIAGRAM / IMAGE QUESTIONS: if the source diagram has numbered parts with a predefined answer bank, keep the image, keep the numbering, keep the question text, and make each numbered part a dropdown from that answer bank (type "image_identify" with imageLabels). If the diagram's numbered parts have NO listed answer bank (only an answer key elsewhere, or truly open identification), leave each part's options EMPTY so the student types the answer — do not fabricate multiple-choice options for it either.
+   - MULTI-PART QUESTIONS (e.g. one stem followed by numbered sub-items 1, 2, 3, 4, 5…): keep the full stem as the question text and give each numbered sub-item its OWN blank (in order) — never merge them into a single field, never drop or shorten any sub-item.
+   Across all types: never change a short/open question into an MCQ, never change a true/false into a cloze, never change matching into anything else, never merge or remove blanks.
+
+3. MOLECULES, FORMULAS, AND STRUCTURES ARE ESPECIALLY SENSITIVE: when the source shows a molecular structure, skeletal formula, chemical diagram, or similar figure that the student is meant to identify, you MUST display ONLY the original image (via imageIndex) — never redraw it, never generate a similar-looking substitute, and critically: never write the molecule/compound's name anywhere in the question text, stem, or blank label, since that would reveal the answer the student is supposed to identify. The name may only appear as one of the answer options/correct value when the source itself lists it as a choice.
+
+4. CORRECT ANSWER SOURCE — VISUAL, FROM THE PAGE IMAGE: the rasterized page images supplied after the document are REQUIRED grading input. For each blank/question, find the clearly marked answer in the answer box/key (most commonly YELLOW-HIGHLIGHTED text, sometimes bold/boxed) — often at the bottom of a page or the end of the exam. That marked text is the correct answer, copied EXACTLY as marked.
    - NEVER use a student's circled answer, checkmark, or handwritten mark — those may be WRONG and must be ignored.
-   - NEVER guess the correct answer from your own knowledge.
-   - If no yellow highlight exists for a blank, leave its "correct" as an empty string.
+   - NEVER guess the correct answer from your own subject-matter knowledge.
+   - If no marked answer exists for a blank, leave its "correct" as an empty string rather than guess.
 
-4. OPTIONS RULES BY TYPE:
-   - CLOZE and MCQ blanks: give every blank 4-8 options — the real answer (from the yellow highlight, verbatim) plus realistic distractors. Distractors must be scientifically accurate as standalone facts, plausible, distinct, and matched in length/register to the real answer. If the source already shows options, keep those and only top up if fewer than 4.
-   - TRUEFALSE blanks: options must be exactly ["True","False"].
-   - SHORT blanks: options[] MUST be empty — do not fabricate choices for an open question.
-   - MATCHING blanks: options are the candidate descriptions.
+5. OPTIONS — NEVER FABRICATE: only put options in a blank's options[] when the source itself prints those choices (an MCQ's own choices, a printed answer bank/word list, a matching question's descriptions, or the fixed ["True","False"] pair). Never invent, add, remove, reorder (beyond what the source itself randomizes), or shorten options. A blank with no printed choices in the source must have options[] EMPTY, never invented distractors — it becomes free text.
 
-5. PER-BLANK EXPLANATIONS — REQUIRED for every blank that has options (cloze, mcq, truefalse, matching): fill blanks[].explanations[] with exactly one entry per option, in the SAME ORDER as options[]. Each entry is 1-2 sentences of accurate rationale for why that option is correct or incorrect for this blank. Short-answer blanks (no options) do not need explanations.
+6. PER-BLANK EXPLANATIONS — for every blank that DOES have options (cloze with an answer bank, mcq, truefalse, matching, image_identify with a bank), fill blanks[].explanations[] with exactly one entry per option, same order as options[], each 1-2 sentences of accurate rationale for why that option is correct or incorrect. Free-text blanks (no options) do not need explanations.
 
-6. RANDOMIZE OPTION ORDER for cloze/mcq/matching blanks (keep explanations aligned). Do NOT randomize the ["True","False"] pair.
+7. PARTIAL CREDIT: each blank counts as 1 point; include every blank, never drop one for being hard to parse.
 
-7. PARTIAL CREDIT: each blank counts as 1 point; include every blank.
+8. IMAGES: every figure, diagram, table-as-image, or molecular structure that a question depends on MUST be kept via imageIndex (0-based index into the supplied page images) — never omit it, never describe it in words instead of showing it, never substitute a generated image. If a genuinely required image cannot be matched to a supplied page render, still write the question text/blanks faithfully but leave imageIndex unset rather than pointing at the wrong page.
 
-8. IMAGES: if a question refers to a figure/diagram in the material, KEEP the image via imageIndex (0-based index of the supplied page images). For "identify the numbered structures" questions use type "image_identify" with imageLabels (id matching the blank id, x/y normalized 0..1). Never invent images not in the source.
-
-9. COMPLETENESS: report "detected" = number of questions found, "converted" = number successfully converted. These should match.`;
+9. COMPLETENESS AND VALIDATION: report "detected" = number of questions you found on the page, and "converted" = number you actually returned in the questions array. These must be EQUAL — if a question exists in the source, it must appear in the output; never partially import. Double-check your own output against the source before finishing: same number of questions, same numbering, same blanks, same options, same images, same question types, same order.`;
 
     const content: ContentBlock[] = [
       {
@@ -627,14 +779,20 @@ export const parseOldExam = createServerFn({ method: "POST" })
     });
     content.push({
       type: "text",
-      text: `Extract all questions from this exam following the rules exactly. Preserve each question's ORIGINAL TYPE and wording — cloze stays cloze, mcq stays mcq, true/false stays truefalse, open questions stay "short" with EMPTY options. For each blank, find the YELLOW-HIGHLIGHTED answer on its page image. For cloze/mcq/matching blanks, build 4-8 randomized scientifically accurate options with one explanation per option. For truefalse blanks use exactly ["True","False"]. For short/open blanks leave options empty.${
+      text: `Extract every question from this exam, in order, following the rules exactly. Preserve each question's ORIGINAL TYPE, wording, and answer options — copy verbatim, never invent. Only give a blank dropdown options if the source itself prints those choices (an answer bank, MCQ choices, matching descriptions, or True/False); otherwise leave options empty for free text. For each blank/question, find the clearly marked (usually yellow-highlighted) answer on its page image — never guess, never use a student's mark.${
         hasImages
-          ? " The images after the document are the page renders, indexed from 0 in order — use them to locate the yellow highlight for every question, and reference them via imageIndex when a question uses a figure."
-          : " No page images were supplied, so highlight color cannot be checked — leave every question's correct answer as an empty string rather than guessing."
-      }`,
+          ? " The images after the document are the page renders, indexed from 0 in order — use them both to read the marked answer key for every question AND to reproduce any figure/diagram/molecular structure via imageIndex."
+          : " No page images were supplied, so the marked answer key cannot be read — leave every question's correct answer as an empty string rather than guessing, but still capture every question, type, and option exactly."
+      } Report accurate detected/converted counts; they must match.`,
     });
 
-    const out = await callAnthropic(key, system, content);
+    const out = await parseExamWithRetry(
+      key,
+      system,
+      content,
+      data.images.length,
+      data.expectedApprox,
+    );
     return {
       questions: out.questions,
       detected: out.detected ?? out.questions.length,

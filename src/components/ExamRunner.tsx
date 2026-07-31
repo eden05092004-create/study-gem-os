@@ -363,11 +363,20 @@ function QuestionBody({
           if (!blank) return <span key={i}>[[{p.value}]]</span>;
           return (
             <span key={i} className="mx-1 align-middle">
-              <BlankSelect
-                blank={blank}
-                value={answers[key(blank.id)]}
-                onChange={(v) => setAnswer(blank.id, v)}
-              />
+              {blank.options.length > 0 ? (
+                <BlankSelect
+                  blank={blank}
+                  value={answers[key(blank.id)]}
+                  onChange={(v) => setAnswer(blank.id, v)}
+                />
+              ) : (
+                <Input
+                  className="inline-block h-8 w-40 align-middle"
+                  placeholder="Type your answer…"
+                  value={answers[key(blank.id)] ?? ""}
+                  onChange={(e) => setAnswer(blank.id, e.target.value)}
+                />
+              )}
             </span>
           );
         })}
@@ -397,11 +406,20 @@ function QuestionBody({
           <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
             {blank.label}
           </span>
-          <BlankSelect
-            blank={blank}
-            value={answers[key(blank.id)]}
-            onChange={(v) => setAnswer(blank.id, v)}
-          />
+          {blank.options.length > 0 ? (
+            <BlankSelect
+              blank={blank}
+              value={answers[key(blank.id)]}
+              onChange={(v) => setAnswer(blank.id, v)}
+            />
+          ) : (
+            <Input
+              className="max-w-[12rem]"
+              placeholder="Answer…"
+              value={answers[key(blank.id)] ?? ""}
+              onChange={(e) => setAnswer(blank.id, e.target.value)}
+            />
+          )}
         </div>
       ))}
     </div>

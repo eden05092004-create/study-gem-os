@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useStore, type QuestionType } from "@/lib/store";
 import { getAiKeyStatus, parseOldExam } from "@/lib/ai.functions";
-import { extractImages, stripDataUrl } from "@/lib/extract-images";
+import { estimateQuestionCount, extractImages, stripDataUrl } from "@/lib/extract-images";
 import { fileToBase64 } from "@/lib/files";
 import { cn } from "@/lib/utils";
 
@@ -79,7 +79,10 @@ function UploadOldExamPage() {
     try {
       const pdfBase64 = await fileToBase64(file);
       // render pages so the AI can see the yellow-highlighted answers and keep original figures
-      const pageImages = await extractImages([file]).catch(() => []);
+      const [pageImages, expectedApprox] = await Promise.all([
+        extractImages([file]).catch(() => []),
+        estimateQuestionCount(file).catch(() => 0),
+      ]);
       const res = await runParse({
         data: {
           pdfBase64,
@@ -88,6 +91,7 @@ function UploadOldExamPage() {
             data: stripDataUrl(im.dataUrl),
             mediaType: im.mediaType,
           })),
+          expectedApprox,
         },
       });
       setReport({ detected: res.detected, converted: res.converted });
@@ -275,10 +279,11 @@ function UploadOldExamPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-muted/60 p-4 text-xs leading-relaxed text-muted-foreground">
-            Your exam is reproduced exactly as written — wording and fill-in-the-blank passages
-            are never rewritten. Each missing word/phrase gets 4–8 shuffled answer choices, with
-            the correct one read from the <strong>yellow-highlighted answer</strong> in your PDF —
-            never from a student's circled or checked answer.
+            Your exam is reproduced exactly as written — wording, options, and images are never
+            rewritten or invented. A blank becomes a dropdown only if the PDF itself prints an
+            answer bank for it; otherwise it stays free text. The correct answer is read from the{" "}
+            <strong>yellow-highlighted answer</strong> in your PDF — never from a student's
+            circled or checked answer, and never guessed.
           </div>
 
           {report && (
