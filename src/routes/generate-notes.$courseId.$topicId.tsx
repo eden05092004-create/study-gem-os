@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ChevronLeft, Sparkles, Loader2, NotebookPen } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, Sparkles, Loader2, NotebookPen, Languages } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell, PageTitle } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
@@ -10,9 +10,16 @@ import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { getAiKeyStatus, generateNotesChunk } from "@/lib/ai.functions";
 import type { AiNoteSection } from "@/lib/ai.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { fileToBase64 } from "@/lib/files";
+import { MaterialPicker, type MaterialSelection } from "@/components/MaterialPicker";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/generate-notes/$courseId/$topicId")({
+  validateSearch: (search: Record<string, unknown>): { lectureIds?: string[]; fileIds?: string[] } => ({
+    lectureIds: Array.isArray(search.lectureIds) ? search.lectureIds.filter((x) => typeof x === "string") : [],
+    fileIds: Array.isArray(search.fileIds) ? search.fileIds.filter((x) => typeof x === "string") : [],
+  }),
   component: GenerateNotesPage,
 });
 
@@ -38,15 +45,20 @@ const SECTION_ORDER = [
   "coverage",
 ];
 
-
 const DETAIL_OPTIONS = [
   { value: "detailed", label: "Detailed", desc: "Exhaustive, longest" },
   { value: "balanced", label: "Balanced", desc: "Textbook depth" },
   { value: "concise", label: "Concise", desc: "Tight but complete" },
 ] as const;
 
+/** ~20MB combined / 12 files — enough for a solid batch of PDFs/slide decks
+ *  without risking an oversized Anthropic request. No chunking — just a clear stop. */
+const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
+const MAX_DOCUMENTS = 12;
+
 function GenerateNotesPage() {
   const { courseId, topicId } = Route.useParams();
+  const searchParams = Route.useSearch();
   const navigate = useNavigate();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const topic = course?.topics.find((t) => t.id === topicId);
@@ -56,17 +68,33 @@ function GenerateNotesPage() {
 
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [detail, setDetail] = useState<string>("balanced");
-  const [fileId, setFileId] = useState<string>("");
+  const [material, setMaterial] = useState<MaterialSelection>({
+    lectureIds: searchParams.lectureIds ?? [],
+    fileIds: searchParams.fileIds ?? [],
+  });
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<string>("");
+  const defaultApplied = useRef(false);
 
   useEffect(() => {
     checkStatus().then((r) => setHasKey(r.hasKey)).catch(() => setHasKey(false));
   }, [checkStatus]);
 
+  // First-run convenience: if the link here didn't already specify material
+  // (e.g. from "Generate Notes" on a topic page), default to everything in
+  // this topic so a single file still "just works" with one click. Runs once.
   useEffect(() => {
-    if (topic && !fileId && topic.files[0]) setFileId(topic.files[0].id);
-  }, [topic, fileId]);
+    if (defaultApplied.current || !topic) return;
+    const hasPreselection = (searchParams.lectureIds?.length ?? 0) > 0 || (searchParams.fileIds?.length ?? 0) > 0;
+    if (!hasPreselection && (topic.files.length > 0 || topic.lectures.length > 0)) {
+      setMaterial({
+        lectureIds: topic.lectures.map((l) => l.id),
+        fileIds: topic.files.map((f) => f.id),
+      });
+    }
+    defaultApplied.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic]);
 
   if (!course || !topic) {
     return (
@@ -76,22 +104,84 @@ function GenerateNotesPage() {
     );
   }
 
+  const selectedFiles = course.topics.flatMap((t) => t.files).filter((f) => material.fileIds.includes(f.id));
+  const selectedLectures = course.topics
+    .flatMap((t) => t.lectures)
+    .filter((l) => material.lectureIds.includes(l.id));
+  const involvedTopics = course.topics.filter(
+    (t) => t.lectures.some((l) => material.lectureIds.includes(l.id)) || t.files.some((f) => material.fileIds.includes(f.id)),
+  );
+
   const onGenerate = async () => {
     if (!hasKey) {
       toast.error("AI features require an API key.");
       return;
     }
-    if (topic.files.length === 0) {
-      toast.error("Upload a file to this topic first");
+    if (selectedFiles.length === 0) {
+      toast.error("Select at least one PDF or slide deck to summarize");
       return;
     }
     setLoading(true);
-    setProgress("");
+    setProgress("Reading source files…");
     try {
-      const file = topic.files.find((f) => f.id === fileId);
-      const subject = `Course: ${course.name}. Topic: ${topic.name}. Source file: ${
-        file?.name ?? topic.files.map((f) => f.name).join(", ")
-      }.`;
+      const downloadable = selectedFiles.filter((f) => f.storagePath);
+      const skipped = selectedFiles.filter((f) => !f.storagePath);
+      if (skipped.length) {
+        toast.warning(
+          `${skipped.length} selected file(s) have no saved content and will be skipped: ${skipped
+            .map((f) => f.name)
+            .join(", ")}`,
+        );
+      }
+      if (downloadable.length === 0) {
+        toast.error("None of the selected files have saved content to read.");
+        setLoading(false);
+        setProgress("");
+        return;
+      }
+      if (downloadable.length > MAX_DOCUMENTS) {
+        toast.error(`Select at most ${MAX_DOCUMENTS} files per summary.`);
+        setLoading(false);
+        setProgress("");
+        return;
+      }
+
+      const documents: { data: string; mediaType: string }[] = [];
+      let totalBytes = 0;
+      for (const f of downloadable) {
+        const { data: blob, error } = await supabase.storage.from("materials").download(f.storagePath!);
+        if (error || !blob) {
+          toast.error(`Could not read ${f.name}: ${error?.message ?? "unknown error"}`);
+          continue;
+        }
+        totalBytes += blob.size;
+        if (totalBytes > MAX_DOCUMENT_BYTES) {
+          toast.error(`Selected files exceed the ${(MAX_DOCUMENT_BYTES / 1024 / 1024).toFixed(0)}MB combined limit.`);
+          setLoading(false);
+          setProgress("");
+          return;
+        }
+        documents.push({ data: await fileToBase64(blob), mediaType: f.mimeType || "application/pdf" });
+      }
+      if (!documents.length) {
+        toast.error("Could not read any of the selected files.");
+        setLoading(false);
+        setProgress("");
+        return;
+      }
+
+      const topicNames = involvedTopics.map((t) => t.name).join(", ") || topic.name;
+      const fileList = downloadable.map((f, i) => `${i + 1}. ${f.name}`).join("\n");
+      const subject = [
+        `Course: ${course.name}.`,
+        `Topics covered by the selected material: ${topicNames}.`,
+        selectedLectures.length
+          ? `Selected lectures: ${selectedLectures.map((l) => `${l.number ? l.number + " " : ""}${l.name}`).join("; ")}.`
+          : "",
+        `${documents.length} source document(s) are attached, in this order:\n${fileList}`,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
       const total = SECTION_BATCHES.length;
       const collected: AiNoteSection[] = [];
@@ -114,6 +204,7 @@ function GenerateNotesPage() {
                 sectionKeys: batch.keys,
                 part: i + 1,
                 total,
+                documents,
               },
             });
             break;
@@ -166,7 +257,6 @@ function GenerateNotesPage() {
     }
   };
 
-
   return (
     <AppShell>
       <Link
@@ -178,7 +268,7 @@ function GenerateNotesPage() {
       </Link>
       <PageTitle
         title="Generate notes (AI)"
-        subtitle="Textbook-style notes from a file in this topic"
+        subtitle="Pick every PDF or slide deck you want summarized together, by topic"
       />
 
       {hasKey === false && (
@@ -192,35 +282,22 @@ function GenerateNotesPage() {
       )}
 
       <Card className="mb-4 border-none p-5">
-        <Label className="mb-2 block">Source file</Label>
-        {topic.files.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No files yet.{" "}
-            <Link to="/upload" className="font-semibold text-primary underline">
-              Upload one first
-            </Link>
-            .
-          </p>
+        <Label className="mb-2 block">Material to summarize</Label>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Select any files or lectures from anywhere in this course — everything you check is combined
+          into one set of notes, clearly organized by topic.
+        </p>
+        <MaterialPicker topics={course.topics} value={material} onChange={setMaterial} />
+      </Card>
+
+      <Card className="mb-4 border-none bg-muted/50 p-4 text-xs text-muted-foreground">
+        {selectedFiles.length === 0 ? (
+          <>Nothing selected yet — pick at least one file above to ground the summary in your real material.</>
         ) : (
-          <div className="space-y-2">
-            {topic.files.map((f) => (
-              <label
-                key={f.id}
-                className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm transition-colors",
-                  fileId === f.id ? "border-primary bg-primary/5" : "border-border",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="file"
-                  checked={fileId === f.id}
-                  onChange={() => setFileId(f.id)}
-                />
-                <span className="truncate font-medium text-foreground">{f.name}</span>
-              </label>
-            ))}
-          </div>
+          <>
+            Summarizing {selectedFiles.length} file{selectedFiles.length === 1 ? "" : "s"}
+            {involvedTopics.length > 1 ? ` across ${involvedTopics.length} topics` : ""}: {involvedTopics.map((t) => t.name).join(", ")}.
+          </>
         )}
       </Card>
 
@@ -249,7 +326,7 @@ function GenerateNotesPage() {
       <Button
         className="w-full rounded-full"
         onClick={onGenerate}
-        disabled={loading || hasKey !== true || topic.files.length === 0}
+        disabled={loading || hasKey !== true || selectedFiles.length === 0}
       >
         {loading ? (
           <>
@@ -268,8 +345,13 @@ function GenerateNotesPage() {
       )}
       <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
         <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-        Notes cover every slide/page with zero omission and expand bullet points into
-        full explanations — not a summary.
+        Notes cover every slide/page with zero omission, split cleanly by topic when multiple
+        files are combined, and expand bullet points into full explanations — not a summary.
+      </div>
+      <div className="mt-2 flex items-start gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+        <Languages className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        Always written in clear, professional English — no matter what language the source
+        material is in.
       </div>
     </AppShell>
   );

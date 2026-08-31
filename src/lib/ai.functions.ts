@@ -316,33 +316,41 @@ export const NOTE_SECTION_SPECS: {
   icon: string;
   guide: string;
 }[] = [
-  { key: "overview", title: "Overview", icon: "📌", guide: "A high-level orientation to the whole topic." },
-  { key: "full", title: "Full Content", icon: "📖", guide: "Use markdown-style headings and textbook-level explanations covering ALL material. This is the core section — cover every slide/page/section with zero omission." },
-  { key: "tables", title: "Comparison Tables", icon: "📊", guide: "Create comparison tables where relevant; render as plain-text tables." },
+  { key: "overview", title: "Overview", icon: "📌", guide: "A high-level orientation to the whole topic. If multiple source documents/lectures were supplied, briefly list the distinct topics they cover." },
+  { key: "full", title: "Full Content", icon: "📖", guide: "Use markdown headings and textbook-level explanations covering ALL material. This is the core section — cover every slide/page/section with zero omission. If the source spans more than one distinct topic, lecture, or document, split this section with a top-level markdown heading (## Topic Name) per topic, named after its actual subject, in the order the material was supplied — never blend unrelated topics together into one block." },
+  { key: "tables", title: "Comparison Tables", icon: "📊", guide: "Create comparison tables where relevant, formatted as GitHub-flavored markdown pipe tables (a header row, a `---` separator row, then data rows)." },
   { key: "highyield", title: "High Yield", icon: "⭐", guide: "The points most likely to appear on the exam." },
   { key: "clinical", title: "Clinical Correlations", icon: "🏥", guide: "Clinical relevance and correlations." },
   { key: "mistakes", title: "Common Mistakes", icon: "⚠️", guide: "Common misconceptions and errors students make." },
   { key: "details", title: "Small Details", icon: "🔍", guide: "Exact numbers, exceptions, footnotes, specific values, named researchers — the easily-missed details." },
   { key: "quickcheck", title: "Quick Check", icon: "❓", guide: "3-4 self-test questions with answers." },
-  { key: "coverage", title: "Coverage Check", icon: "✅", guide: "List which slides/pages/sections were covered, confirming nothing was omitted." },
+  { key: "coverage", title: "Coverage Check", icon: "✅", guide: "List which slides/pages/sections — and, if multiple documents were supplied, which document/lecture each came from — were covered, confirming nothing was omitted." },
 ];
 
 export const generateNotesChunk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { subject: string; detail: string; sectionKeys?: string[]; part?: number; total?: number }) => {
+    (input: {
+      subject: string;
+      detail: string;
+      sectionKeys?: string[];
+      part?: number;
+      total?: number;
+      documents?: AiImageInput[];
+    }) => {
       const valid = new Set(NOTE_SECTION_SPECS.map((s) => s.key));
       const keys = Array.isArray(input.sectionKeys)
         ? input.sectionKeys.filter((k) => valid.has(k))
         : [];
       return {
-        subject: String(input.subject ?? "").slice(0, 2000),
+        subject: String(input.subject ?? "").slice(0, 4000),
         detail: ["detailed", "balanced", "concise"].includes(input.detail)
           ? input.detail
           : "balanced",
         sectionKeys: keys.length ? keys : NOTE_SECTION_SPECS.map((s) => s.key),
         part: Math.max(1, Number(input.part) || 1),
         total: Math.max(1, Number(input.total) || 1),
+        documents: sanitizeDocuments(input.documents),
       };
     },
   )
@@ -367,18 +375,31 @@ export const generateNotesChunk = createServerFn({ method: "POST" })
 ABSOLUTE RULES:
 - ZERO OMISSION: every single slide / page / section of the source material MUST be represented in the notes. Do NOT drop anything as "unimportant" — professors test tiny details.
 - This is NOT a summary. Expand terse bullet points into full, flowing textbook-quality explanations. Teach the concept as a textbook chapter would.
+- LANGUAGE: always write the notes in clear, fluent, professional English — no matter what language the source documents are written in. Translate everything into English.
+- TOPIC SEPARATION: when the source spans multiple distinct topics, lectures, or documents, keep them clearly separated (see the "full" section's instructions below) — never merge unrelated topics into one paragraph.
 - Detail level: ${detailGuide}
 - You are writing PART ${data.part} of ${data.total} of a larger note. Produce ONLY the sections requested below, but base them on the ENTIRE source material so nothing is omitted.
 
 Return via the save_notes tool. Provide EXACTLY these sections, in this order, using these exact keys/titles/icons:
 ${sectionList}
 
-Write the "body" of each section as readable text (paragraphs, headings, lists). Set "title" to a short note title.`;
-    const prompt = `Source material to turn into complete textbook-style notes:\n${data.subject}\n\nProduce ONLY the requested sections now, covering every slide/page with zero omission.`;
+Write the "body" of each section as readable markdown (headings, paragraphs, lists, pipe tables). Set "title" to a short note title.`;
+    const prompt = `Source material to turn into complete textbook-style notes:\n${data.subject}${
+      data.documents.length
+        ? `\n\n${data.documents.length} source document(s) are attached above, in order — read them fully and use them as the primary grounding for every section.`
+        : ""
+    }\n\nProduce ONLY the requested sections now, covering every slide/page with zero omission, written in English.`;
 
-    const out = await callAnthropicNotes(key, system, [
-      { type: "text", text: prompt },
-    ]);
+    const content: ContentBlock[] = data.documents.map((doc, i) => ({
+      type: "document" as const,
+      source: { type: "base64" as const, media_type: doc.mediaType, data: doc.data },
+      // Same documents are resent on every chunk of this multi-part job — cache them so
+      // later chunks in the loop don't reprocess the full material from scratch.
+      ...(i === data.documents.length - 1 ? { cache_control: { type: "ephemeral" as const } } : {}),
+    }));
+    content.push({ type: "text", text: prompt });
+
+    const out = await callAnthropicNotes(key, system, content);
     // Keep only requested sections, in canonical order.
     const byKey = new Map(out.sections.map((s) => [s.key, s]));
     const sections = specs
