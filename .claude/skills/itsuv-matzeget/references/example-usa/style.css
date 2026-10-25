@@ -1,0 +1,109 @@
+/* עולם: "ארכיון אמריקאי" — כחול לילה, לבן נייר, זהב ואדום מאופק. ארכיון בספיה ושחור-לבן, צבע מלא מהירח והלאה */
+:root{--bg:#0a0f1f;--bg-top:#121b36;--bg-bottom:#070a14;--fg:#f4efe4;--muted:#b8b2a3;
+  --gold:#e2b65c;--red:#d4524a;--blue:#7aa6ff;--paper:#efe6d2;
+  --font-display:'Heebo';--font-body:'Heebo';--font-quote:'Frank Ruhl Libre'}
+.star{fill:var(--gold);filter:drop-shadow(0 0 10px rgba(226,182,92,.6))}
+
+/* 1. השאלה */
+.u1{--ga:#7aa6ff;--gb:#d4524a;--gx:50%;--gy:45%}
+.u1 .ring{position:absolute;left:560px;top:140px;width:800px;height:800px;opacity:.35}
+.u1 .ring g{opacity:0;animation:starIn .5s var(--ease) forwards}
+@keyframes starIn{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+.u1 h1{position:absolute;left:220px;right:220px;top:340px;text-align:center;font-size:88px;font-weight:900;line-height:1.15;letter-spacing:-.015em}
+.u1 .ans{position:absolute;left:0;right:0;top:720px;text-align:center;font-family:var(--font-quote);font-size:46px;color:var(--gold)}
+
+/* 2. ג'יימסטאון */
+.u2{--ga:#e2b65c;--gb:#7aa6ff;--gx:15%;--gy:30%}
+.u2 .print-photo{left:110px;top:250px;width:860px;height:520px;--r:-2.5deg}
+.u2 .p1{position:absolute;right:120px;top:300px;width:760px;font-size:44px;line-height:1.45;font-weight:700}
+.u2 .coast{position:absolute;right:120px;top:520px;width:760px;height:90px}
+.u2 .coast::before{content:"";position:absolute;left:0;right:0;top:44px;height:3px;background:linear-gradient(270deg,var(--gold),transparent);opacity:.5}
+.u2 .coast i{position:absolute;top:33px;width:24px;height:24px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px var(--gold);opacity:0;transform:scale(.2);transition:opacity .35s,transform .45s cubic-bezier(.3,1.5,.5,1)}
+.u2 .coast.in i{opacity:1;transform:none}
+.u2 .p2{position:absolute;right:120px;top:640px;width:760px;font-size:38px;line-height:1.45;color:#e8e2d4}
+
+/* 3. 4 ביולי */
+.u3 .kb{transform-origin:50% 45%}
+.u3 .full{filter:sepia(.35) saturate(.85)}
+.u3 .t{font-family:var(--font-quote);font-size:84px;top:44px}
+.u3 .shade-all{opacity:0;transition:opacity 1.2s}
+.u3.at1 .shade-all{opacity:1}
+.u3 .q{position:absolute;left:200px;right:200px;top:400px;text-align:center;font-family:var(--font-quote);font-size:68px;font-weight:700;line-height:1.3;z-index:3}
+.u3 .who{position:absolute;left:0;right:0;top:690px;text-align:center;font-size:34px;color:var(--gold);z-index:3;font-weight:700}
+
+/* 4. We the People */
+.u4{--ga:#e2b65c;--gb:#7aa6ff;--gx:50%;--gy:-10%}
+.u4 .t{font-family:var(--font-quote);direction:ltr;font-size:80px}
+.u4 .band{position:absolute;left:0;right:0;top:190px;height:300px;overflow:hidden;background:#e9dcc0;box-shadow:0 30px 80px -30px #000;z-index:2}
+.u4 .band img{position:absolute;left:0;top:0;height:300px;width:auto;transform-origin:0 50%;transition:transform 2.4s var(--ease)}
+.slide.u4.active .band img{transform:scale(1.55) translateX(-20px)}
+.u4 .p1{position:absolute;left:220px;right:220px;top:560px;text-align:center;font-size:42px;line-height:1.45;font-weight:700}
+.u4 .p1 .serif{color:var(--gold)}
+.u4 .rail{left:420px;right:420px;top:740px;--c:var(--gold);--c2:var(--blue)}
+.u4 .rail .what{font-size:32px}
+
+/* 5. מלחמת האזרחים */
+.u5{--ga:#d4524a;--gb:#7aa6ff;--gx:90%;--gy:10%}
+.u5 .half img{filter:grayscale(1) contrast(1.1);object-position:50% 20%}
+.u5 .col{position:absolute;right:110px;top:0;width:900px}
+.u5 h2{margin-top:90px;text-align:center;font-size:60px;font-weight:900}
+.u5 .q{margin-top:60px;font-family:var(--font-quote);font-size:52px;font-weight:700;line-height:1.35;text-align:center}
+.u5 .who{margin-top:22px;text-align:center;font-size:30px;color:var(--muted)}
+.u5 .big{position:absolute;right:110px;width:900px;top:640px;text-align:center}
+.u5 .big .num{font-size:150px;color:var(--red);text-shadow:0 0 60px rgba(212,82,74,.5)}
+.u5 .line{position:absolute;right:110px;width:900px;top:830px;text-align:center;font-size:36px;line-height:1.5}
+
+/* 6. אליס איילנד */
+.u6{--ga:#7aa6ff;--gb:#e2b65c;--gx:20%;--gy:20%}
+.u6 .ph1{left:120px;top:210px;width:640px;height:520px;--r:-3deg}
+.u6 .ph2{left:430px;top:430px;width:640px;height:450px;--r:4deg}
+.u6 .print-photo img{filter:sepia(.25)}
+.u6 .side{position:absolute;right:120px;top:250px;width:740px;text-align:center}
+.u6 .side .num{font-size:220px;color:var(--gold);text-shadow:0 0 60px rgba(226,182,92,.4)}
+.u6 .side .unit{font-size:64px;font-weight:900;margin-top:-10px}
+.u6 .p1{position:absolute;right:120px;top:640px;width:740px;text-align:center;font-size:38px;line-height:1.45;font-weight:700}
+.u6 .p2{position:absolute;right:120px;top:800px;width:740px;text-align:center;font-size:34px;line-height:1.45;color:#e8e2d4}
+
+/* 7. הולדת מעצמה (שיא) */
+.u7 .full{filter:grayscale(1) contrast(1.15)}
+.u7 .kb{transform-origin:65% 45%}
+.u7 .t{font-size:84px}
+.u7 .l1{position:absolute;left:0;right:0;bottom:120px;text-align:center;font-size:52px;font-weight:800;z-index:3}
+.u7 .dark{position:absolute;inset:0;z-index:2;background:rgba(7,9,18,.7);opacity:0;transition:opacity 1.2s}
+.u7.at1 .dark{opacity:1}
+.u7.at1 .l1{opacity:.45}
+.u7 .mid{position:absolute;left:0;right:0;top:300px;text-align:center;z-index:3}
+.u7 .mid .num{font-size:240px;color:#fff;text-shadow:0 0 70px rgba(122,166,255,.55)}
+.u7 .mid .unit{font-size:70px;font-weight:900;color:var(--blue)}
+.u7 .l2{position:absolute;left:0;right:0;top:680px;text-align:center;font-size:44px;font-weight:700;z-index:3}
+.u7 .verdict{--c:var(--gold)}
+.u7 .verdict p{color:#fff}
+
+/* 8. הירח */
+.u8 .full{object-position:50% 35%}
+.u8 .kbw img{transform-origin:55% 40%}
+.u8 .side-shade{position:absolute;inset:0;z-index:2;background:linear-gradient(90deg,rgba(5,6,12,.92) 0%,rgba(5,6,12,.6) 42%,transparent 70%);opacity:0;transition:opacity 1.2s}
+.u8.at1 .side-shade{opacity:1}
+.u8 .q{position:absolute;left:110px;width:820px;top:380px;font-family:var(--font-quote);font-size:66px;font-weight:700;line-height:1.25;z-index:3}
+.u8 .who{position:absolute;left:110px;width:820px;top:640px;font-size:32px;color:var(--blue);z-index:3;font-weight:700}
+
+/* 9. זכויות האזרח */
+.u9{--ga:#e2b65c;--gb:#7aa6ff;--gx:90%;--gy:0%}
+.u9 .half{width:880px}
+.u9 .half img{filter:grayscale(1) contrast(1.1);object-position:70% 50%}
+.u9 .col{position:absolute;right:110px;top:0;width:880px;text-align:center}
+.u9 h2{margin-top:110px;font-size:60px;font-weight:900}
+.u9 .q{margin-top:110px;font-family:var(--font-quote);font-size:120px;font-weight:700;line-height:1.1;color:var(--gold);text-shadow:0 0 50px rgba(226,182,92,.35)}
+.u9 .who{margin-top:30px;font-size:32px;color:var(--muted)}
+.u9 .chip{display:inline-block;margin-top:90px;padding:20px 36px;border-radius:999px;font-size:36px;font-weight:800;border:2px solid var(--gold);background:rgba(226,182,92,.12);box-shadow:0 0 50px -10px rgba(226,182,92,.6)}
+
+/* 10. סיום */
+.u10 .kb{transform-origin:50% 50%}
+.u10 .dim{position:absolute;inset:0;z-index:1;background:radial-gradient(60% 60% at 50% 50%,rgba(7,9,18,.25),rgba(7,9,18,.85))}
+.u10 .t{font-size:90px;top:70px}
+.u10 .ring{position:absolute;left:760px;top:250px;width:400px;height:400px;z-index:2;transition:opacity 1s,transform 1.2s var(--ease)}
+.u10.at1 .ring{opacity:0;transform:scale(.6)}
+.u10 .flag50{position:absolute;left:660px;top:250px;width:600px;height:330px;z-index:2;opacity:0;transform:scale(1.3);transition:opacity 1.2s .3s,transform 1.4s var(--ease) .3s}
+.u10.at1 .flag50{opacity:1;transform:none}
+.u10 .l1{position:absolute;left:180px;right:180px;top:690px;text-align:center;font-size:46px;font-weight:800;line-height:1.35;z-index:3}
+.u10 .l2{position:absolute;left:0;right:0;top:850px;text-align:center;font-family:var(--font-quote);font-size:60px;font-weight:700;color:var(--gold);z-index:3}

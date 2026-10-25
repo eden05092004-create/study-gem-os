@@ -1,0 +1,531 @@
+<!-- מצגת דוגמה (נרקיסיזם): 9 שקפים בשפה הוויזואלית. נכתבה לפני המנוע הנוכחי, ולכן המחלקות שונות מעט (.on במקום .active). ללמידת קומפוזיציה ובילדאפים, לא להעתקה ישירה. -->
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>שפה ויזואלית חדשה</title>
+<style>
+:root{
+  --fg:#f4f1f8; --muted:#aaa4bd; --line:rgba(255,255,255,.09);
+  --rose:#ff6b8a; --teal:#34d6c3; --amber:#ffb547; --violet:#a98bff; --sky:#5ab8ff; --lime:#9be36b;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#04050a;overflow:hidden;color:var(--fg);font-family:Heebo,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center}
+.slide{position:absolute;inset:0;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .6s,visibility .6s;
+  background:
+    radial-gradient(1000px 640px at var(--gx,82%) var(--gy,-6%),color-mix(in srgb,var(--ga) 24%,transparent),transparent 70%),
+    radial-gradient(900px 640px at var(--hx,8%) var(--hy,106%),color-mix(in srgb,var(--gb) 18%,transparent),transparent 70%),
+    linear-gradient(180deg,#141a35 0%,#0b0d19 60%,#08090f 100%)}
+.slide.on{opacity:1;visibility:visible}
+.b{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .9s var(--ease)}
+.b.in{opacity:1;transform:none}
+.ico{display:inline-flex;flex:none}
+.ico svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.serif{font-family:'Frank Ruhl Libre',serif}
+.en{font-family:Heebo,sans-serif;direction:ltr;unicode-bidi:isolate}
+
+/* כותרת שמתחילה גדולה במרכז ועולה למעלה */
+.lead{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;padding:0 160px;
+  font-size:104px;font-weight:900;line-height:1.08;letter-spacing:-.015em;z-index:5;
+  transition:top .9s var(--ease),transform .9s var(--ease),font-size .9s var(--ease)}
+.slide.at1 .lead{top:50px;transform:none;font-size:56px;padding:0 90px}
+.lead br{display:block}
+.slide.at1 .lead br{display:none}
+.t{position:absolute;left:0;right:0;top:52px;text-align:center;font-size:66px;font-weight:900;letter-spacing:-.01em;line-height:1.1;z-index:5}
+
+/* חוטים זוהרים */
+svg.wires{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none;z-index:1}
+svg.wires path{fill:none;stroke:var(--c);stroke-width:4;stroke-linecap:round}
+svg.wires .w0{stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 8px var(--c));opacity:.75;transition:stroke-dashoffset 1s var(--ease) .15s}
+svg.wires .w1{stroke-width:6;stroke-dasharray:.015 .06;opacity:0;transition:opacity .4s 1s;animation:flow 1.4s linear infinite}
+svg.wires g.in .w0{stroke-dashoffset:0}
+svg.wires g.in .w1{opacity:.9}
+@keyframes flow{to{stroke-dashoffset:-.075}}
+
+/* ============ שקף א: ההגנות ============ */
+.sA{--ga:#ff6b8a;--gb:#5ab8ff;--gx:50%;--gy:50%;--hx:50%;--hy:120%}
+.sA .intro{position:absolute;top:150px;left:0;right:0;text-align:center;font-size:36px;color:#cfc9dc}
+.sA .core{position:absolute;left:860px;top:455px;width:200px;height:200px;border-radius:50%;z-index:3;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  background:radial-gradient(circle at 50% 38%,#ff9db1,#e0466b 52%,#721532 100%);
+  box-shadow:0 0 0 2px rgba(255,150,175,.55),0 0 140px 30px rgba(255,80,120,.42);
+  transition:transform 1s var(--ease),filter 1s,box-shadow 1s}
+.sA .core .ico{width:92px;height:92px}
+.sA .core::before,.sA .core::after{content:"";position:absolute;inset:-16px;border-radius:50%;border:2px solid rgba(255,120,150,.55);animation:ring 2.8s ease-out infinite}
+.sA .core::after{animation-delay:1.4s}
+@keyframes ring{from{transform:scale(.92);opacity:.9}to{transform:scale(1.7);opacity:0}}
+.sA.at1 .core{transform:scale(.9)}
+.sA.at2 .core{transform:scale(.8);filter:saturate(.8)}
+.sA.at3 .core{transform:scale(.7);filter:saturate(.6) brightness(.85)}
+.sA.at4 .core{transform:scale(.6);filter:saturate(.45) brightness(.7);box-shadow:0 0 0 2px rgba(255,150,175,.3),0 0 60px 6px rgba(255,80,120,.2)}
+.sA .def{position:absolute;width:640px;padding:30px 36px 34px;border-radius:30px;z-index:2;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 15%,#121528),#0d0f1e 85%);
+  border:1.5px solid color-mix(in srgb,var(--c) 62%,transparent);
+  box-shadow:0 0 80px -22px color-mix(in srgb,var(--c) 75%,transparent),0 30px 60px -30px #000;
+  transform:translate(var(--fx),var(--fy)) scale(.6)}
+.sA .def.in{transform:none}
+.sA .def .hd{display:flex;align-items:center;gap:18px}
+.sA .tile{width:66px;height:66px;border-radius:18px;padding:15px;color:var(--c);
+  background:color-mix(in srgb,var(--c) 16%,transparent);border:1.5px solid color-mix(in srgb,var(--c) 80%,transparent);
+  box-shadow:0 0 30px -6px color-mix(in srgb,var(--c) 70%,transparent)}
+.sA .def h3{font-size:42px;font-weight:900;color:var(--c);letter-spacing:-.01em}
+.sA .def q{display:block;quotes:none;margin-top:18px;font-size:40px;font-weight:700;line-height:1.28}
+.sA .relief{position:absolute;top:888px;left:240px;right:240px;text-align:center;font-size:33px;line-height:1.45;color:#d6d1e2}
+.sA .verdict{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;padding:0 240px;text-align:center;
+  background:rgba(7,8,15,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transform:none}
+.sA .verdict .bar{width:120px;height:6px;border-radius:6px;background:var(--rose);box-shadow:0 0 30px var(--rose)}
+.sA .verdict p{font-size:80px;font-weight:700;line-height:1.28}
+
+/* ============ שקף ב: זולת-עצמי ============ */
+.sB{--ga:#a98bff;--gb:#34d6c3;--gx:50%;--gy:-10%;--hx:50%;--hy:105%}
+.sB .p1{position:absolute;top:160px;left:250px;right:250px;text-align:center;font-size:37px;line-height:1.45;color:#d9d4e6}
+.sB .dict{position:absolute;top:340px;left:330px;width:1260px;padding:54px 70px 60px;border-radius:36px;
+  background:linear-gradient(160deg,rgba(169,139,255,.16),rgba(20,22,44,.85) 60%);
+  border:1.5px solid rgba(169,139,255,.55);box-shadow:0 0 120px -30px rgba(169,139,255,.7),0 40px 80px -40px #000}
+.sB .dict .term{display:flex;align-items:baseline;gap:26px;padding-bottom:26px;margin-bottom:26px;border-bottom:1px solid rgba(169,139,255,.3)}
+.sB .dict .term b{font-size:100px;font-weight:900;color:#cbb8ff;letter-spacing:-.02em;line-height:1}
+.sB .dict .term span{font-size:46px;font-weight:400;color:#9f97b8}
+.sB .dict p{font-size:38px;line-height:1.55}
+.sB .dict .mark{position:absolute;left:56px;top:50px;width:84px;height:84px;padding:18px;border-radius:24px;color:#cbb8ff;
+  background:rgba(169,139,255,.15);border:1.5px solid rgba(169,139,255,.6)}
+.sB .ph1{transition:opacity .6s,transform .8s var(--ease)}
+.sB.at2 .ph1.in{opacity:0;transform:translateY(-50px)}
+.sB .sub{position:absolute;top:150px;left:0;right:0;text-align:center;font-size:38px;font-weight:700;color:#d9d4e6}
+.sB .need{position:absolute;top:240px;width:470px;height:372px;padding:30px 34px 34px;border-radius:30px;z-index:2;text-align:center;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 16%,#121528),#0d0f1e 90%);
+  border:1.5px solid color-mix(in srgb,var(--c) 62%,transparent);
+  box-shadow:0 0 90px -24px color-mix(in srgb,var(--c) 80%,transparent),0 30px 60px -30px #000}
+.sB .need .tile{width:84px;height:84px;margin:0 auto 16px;border-radius:24px;padding:19px;color:var(--c);
+  background:color-mix(in srgb,var(--c) 16%,transparent);border:1.5px solid color-mix(in srgb,var(--c) 80%,transparent);
+  box-shadow:0 0 36px -6px color-mix(in srgb,var(--c) 80%,transparent)}
+.sB .need h3{font-size:46px;font-weight:900;color:var(--c);line-height:1.1}
+.sB .need h3 .en{display:block;font-size:26px;font-weight:400;color:#a49cbb;margin-top:6px}
+.sB .need p{font-size:28px;line-height:1.42;margin-top:16px;color:#e7e3ef}
+.sB .hub{position:absolute;left:870px;top:690px;width:180px;height:180px;border-radius:50%;z-index:3;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  background:radial-gradient(circle at 50% 38%,#3b3f63,#1a1c33 70%);
+  border:2px solid rgba(255,255,255,.18);box-shadow:0 0 40px 0 rgba(255,255,255,.08);
+  transition:box-shadow 1s var(--ease),border-color 1s,background 1s}
+.sB .hub .ico{width:84px;height:84px}
+.sB .hub::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:2px dashed rgba(255,255,255,.22);animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sB.at5 .hub::after{border-color:rgba(255,255,255,.5)}
+.sB.at3 .hub{box-shadow:0 0 70px 6px rgba(52,214,195,.35);border-color:rgba(52,214,195,.6)}
+.sB.at4 .hub{box-shadow:0 0 100px 14px rgba(255,181,71,.35),0 0 60px 4px rgba(52,214,195,.3);border-color:rgba(255,220,160,.7)}
+.sB.at5 .hub{box-shadow:0 0 140px 26px rgba(169,139,255,.45),0 0 80px 8px rgba(255,181,71,.3);border-color:rgba(255,255,255,.85);
+  background:radial-gradient(circle at 50% 38%,#7c6ad6,#2a2552 70%)}
+.sB.at6 .hub{box-shadow:0 0 180px 40px rgba(169,139,255,.55),0 0 90px 10px rgba(52,214,195,.35);border-color:#fff}
+.sB .claim{position:absolute;top:905px;left:260px;right:260px;text-align:center;font-size:33px;line-height:1.45;color:#e2deec}
+.sB .ph2{transition:opacity .7s,filter .7s}
+.sB.at7 .ph2{opacity:.14;filter:blur(3px)}
+.sB .care{position:absolute;top:300px;left:300px;width:1320px;z-index:10;padding:56px 70px 62px;border-radius:36px;
+  background:linear-gradient(160deg,rgba(52,214,195,.2),rgba(14,18,34,.94) 55%);
+  border:1.5px solid rgba(52,214,195,.65);box-shadow:0 0 140px -30px rgba(52,214,195,.75),0 50px 100px -40px #000}
+.sB .care .hd{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+.sB .care .tile{width:74px;height:74px;border-radius:22px;padding:17px;color:var(--teal);background:rgba(52,214,195,.14);border:1.5px solid rgba(52,214,195,.75)}
+.sB .care b{font-size:50px;font-weight:900;color:var(--teal)}
+.sB .care p{font-size:40px;line-height:1.55}
+
+/* ============ שקף ג: תיק המקרה ============ */
+.sC{--ga:#ffb547;--gb:#5ab8ff;--gx:85%;--gy:0%}
+.sC .file{position:absolute;left:250px;top:170px;width:1420px;z-index:2;transform:translateY(60px) scale(.96)}
+.sC .file.in{transform:none}
+.sC .tabs{display:flex;gap:10px;padding:0 26px}
+.sC .tab{flex:1;justify-content:center;white-space:nowrap;display:flex;align-items:center;gap:12px;padding:18px 18px 16px;border-radius:22px 22px 0 0;font-size:25px;font-weight:800;
+  background:rgba(255,255,255,.06);color:#9d97b2;border:1px solid rgba(255,255,255,.08);border-bottom:none;transition:all .6s var(--ease)}
+.sC .tab .ico{width:34px;height:34px;color:color-mix(in srgb,var(--c) 70%,#888)}
+.sC .paper{position:relative;height:690px;border-radius:30px;background:#f5f1ea;color:#262230;overflow:hidden;
+  border-top:10px solid var(--sky);box-shadow:0 0 0 1px rgba(255,255,255,.3),0 50px 120px -30px #000,0 0 140px -40px rgba(255,181,71,.5);transition:border-color .6s}
+.sC .paper .clip{position:absolute;left:44px;top:-6px;width:60px;height:96px;color:#8a8496;transform:rotate(-8deg)}
+.sC .paper .clip svg{stroke-width:1.6}
+.sC .redact{position:absolute;left:130px;top:42px;display:flex;gap:10px}
+.sC .redact i{display:block;height:16px;border-radius:3px;background:#2b2733}
+.sC .pages{display:grid;align-content:center;height:100%;padding:80px 110px 60px}
+.sC .pg{grid-area:1/1;opacity:0;transform:translateX(-40px);transition:opacity .55s var(--ease),transform .7s var(--ease);font-family:'Frank Ruhl Libre',serif;font-size:41px;line-height:1.62}
+.sC .pg p+p{margin-top:28px}
+.sC .pg.q{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:40px}
+.sC .pg.q .tile{width:120px;height:120px;border-radius:34px;padding:28px;color:#0f8f82;background:rgba(52,214,195,.16);border:2px solid rgba(15,143,130,.5)}
+.sC .pg.q p{font-size:60px;font-weight:700;line-height:1.35}
+/* מצב פעיל לכל לשונית */
+.sC.at1 .t1,.sC.at2 .t2,.sC.at3 .t3,.sC.at4 .t4{background:#f5f1ea;color:#262230;border-color:transparent;box-shadow:inset 0 6px 0 var(--c)}
+.sC.at1 .t1 .ico,.sC.at2 .t2 .ico,.sC.at3 .t3 .ico,.sC.at4 .t4 .ico{color:var(--c)}
+.sC.at2 .t1,.sC.at3 .t2,.sC.at4 .t3{background:rgba(255,255,255,.06);color:#9d97b2;border-color:rgba(255,255,255,.08);box-shadow:none}
+.sC.at1 .p1,.sC.at2 .p2,.sC.at3 .p3,.sC.at4 .p4{opacity:1;transform:none}
+.sC.at2 .p1,.sC.at3 .p2,.sC.at4 .p3{opacity:0;transform:translateX(40px)}
+.sC.at2 .paper{border-top-color:var(--amber)}
+.sC.at3 .paper{border-top-color:var(--rose)}
+.sC.at4 .paper{border-top-color:var(--teal)}
+
+/* ============ שקף ד: שיחה + מה מתחת ============ */
+.sD{--ga:#ff6b8a;--gb:#34d6c3;--gx:20%;--gy:20%;--hx:90%;--hy:100%}
+.sD .t{font-size:68px}
+.sD .chat{position:absolute;left:1010px;top:182px;width:800px;border-radius:30px;z-index:2;overflow:hidden;
+  background:rgba(16,19,36,.92);border:1px solid rgba(255,255,255,.12);box-shadow:0 50px 100px -40px #000,0 0 100px -40px rgba(255,107,138,.5)}
+.sD .chat .bar{display:flex;align-items:center;gap:10px;padding:18px 26px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);font-size:24px;color:#a49cbb}
+.sD .chat .bar i{width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.18)}
+.sD .chat .bar span{margin-right:auto}
+.sD .msgs{padding:30px 30px 34px;display:flex;flex-direction:column;gap:26px}
+.sD .msg{display:flex;gap:18px;align-items:flex-start;max-width:690px}
+.sD .msg.th{align-self:flex-end;flex-direction:row-reverse}
+.sD .av{width:62px;height:62px;border-radius:50%;flex:none;padding:15px;color:#fff;background:var(--c);box-shadow:0 0 30px -4px var(--c)}
+.sD .who{font-size:24px;font-weight:800;color:var(--c);margin-bottom:8px}
+.sD .msg.th .who{text-align:left}
+.sD .bub{font-size:31px;line-height:1.45;padding:20px 26px;border-radius:24px;
+  background:color-mix(in srgb,var(--c) 14%,#151830);border:1.5px solid color-mix(in srgb,var(--c) 50%,transparent)}
+.sD .msg.pt .bub{border-top-right-radius:6px}
+.sD .msg.th .bub{border-top-left-radius:6px}
+.sD .dots{display:flex;gap:8px;padding:22px 26px;border-radius:24px;width:max-content;background:color-mix(in srgb,var(--c) 14%,#151830)}
+.sD .dots i{width:12px;height:12px;border-radius:50%;background:var(--c);animation:dot 1s infinite}
+.sD .dots i:nth-child(2){animation-delay:.15s}.sD .dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{opacity:.3;transform:none}50%{opacity:1;transform:translateY(-5px)}}
+.sD .dots{max-height:70px;overflow:hidden}
+.sD .msg .text{max-height:0;opacity:0;overflow:hidden;padding-top:0;padding-bottom:0;border-width:0}
+.sD .msg.in .dots,.sD.on .msg.pt .dots{animation:hideDots .01s 1.2s forwards}
+.sD .msg.in .text,.sD.on .msg.pt .text{animation:showText .7s 1.2s forwards}
+@keyframes hideDots{to{max-height:0;padding:0;opacity:0}}
+@keyframes showText{from{max-height:0;opacity:0;padding-top:0;padding-bottom:0;border-width:0}to{max-height:400px;opacity:1;padding-top:20px;padding-bottom:20px;border-width:1.5px}}
+.sD .berg{position:absolute;left:110px;top:200px;width:800px;height:640px;z-index:2}
+.sD .berg h4{text-align:center;font-size:38px;font-weight:800;color:#ffd0da;margin-bottom:24px}
+.sD .sea{position:relative;height:560px;border-radius:0 0 40px 40px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(60,120,190,.28),rgba(20,30,70,.5) 55%,rgba(10,10,30,.75))}
+.sD .sea svg{position:absolute;left:0;top:-2px;width:100%;height:40px}
+.sD .layer{position:absolute;left:50%;transform:translate(-50%,-30px);opacity:0;text-align:center;font-size:38px;font-weight:800;padding:24px 30px;border-radius:26px;
+  transition:opacity .8s var(--ease),transform 1s var(--ease)}
+.sD .berg.in .layer{opacity:1;transform:translate(-50%,0)}
+.sD .l1{top:60px;width:440px;background:rgba(255,107,138,.22);border:1.5px solid rgba(255,107,138,.55);transition-delay:.2s}
+.sD .l2{top:220px;width:580px;background:rgba(255,107,138,.3);border:1.5px solid rgba(255,107,138,.65);transition-delay:.8s}
+.sD .l3{top:380px;width:720px;background:linear-gradient(90deg,rgba(255,107,138,.45),rgba(255,140,90,.45));border:1.5px solid #ff8fa6;
+  box-shadow:0 0 80px -10px rgba(255,107,138,.7);transition-delay:1.4s}
+.sD .l2,.sD .l3{transition-property:opacity,transform}
+.sD svg.link{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none;z-index:1}
+.sD svg.link path{fill:none;stroke:#ff8fa6;stroke-width:3;stroke-dasharray:8 10;opacity:0;transition:opacity .6s .2s}
+.sD svg.link.in path{opacity:.8}
+.sD .punch{position:absolute;top:900px;left:0;right:0;text-align:center;font-size:46px;font-weight:800;line-height:1.3;transform:none}
+.sD .punch span{background:linear-gradient(var(--teal),var(--teal)) no-repeat 100% 100%/0% 6px;padding-bottom:10px;transition:background-size 1.1s var(--ease) .4s}
+.sD .punch.in span{background-size:100% 6px}
+
+/* ============ תמונות: כלים משותפים ============ */
+.full{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.kbw{position:absolute;inset:0;overflow:hidden}
+.slide.on .kb{animation:kb 26s ease-out forwards}
+@keyframes kb{from{transform:scale(1.02)}to{transform:scale(1.14)}}
+.topfade{position:absolute;inset:0 0 auto 0;height:300px;background:linear-gradient(180deg,rgba(8,10,20,.82),transparent);z-index:2;pointer-events:none}
+.img-t{text-shadow:0 4px 30px rgba(0,0,0,.6)}
+
+/* ============ שקף 1: פתיחה ============ */
+.s1 .kb{transform-origin:28% 70%}
+.s1 .shade{position:absolute;inset:0;z-index:2;opacity:0;transition:opacity 1.4s var(--ease);
+  background:linear-gradient(0deg,rgba(7,9,18,.94) 0%,rgba(7,9,18,.6) 34%,rgba(7,9,18,0) 62%)}
+.s1.at1 .shade{opacity:1}
+.s1 h1{position:absolute;left:0;right:0;bottom:120px;z-index:3;text-align:center;font-family:'Frank Ruhl Libre',serif;font-size:100px;font-weight:700;line-height:1.12;letter-spacing:-.01em;
+  text-shadow:0 6px 40px rgba(0,0,0,.55);transition:opacity 1.2s var(--ease) .4s,transform 1.4s var(--ease) .4s}
+.s1 h1 .l2{display:block;font-size:.62em;font-weight:400;color:#d8e7ef;margin-top:14px}
+.s1 h1::before{content:"";display:block;width:110px;height:5px;border-radius:5px;margin:0 auto 34px;background:#8fd3d0;box-shadow:0 0 24px #8fd3d0}
+
+/* ============ שקף 5: עצמי שברירי ============ */
+.s5{--ga:#ff6b8a;--gb:#a98bff;--gx:90%;--gy:0%}
+.s5 .ph{position:absolute;left:0;top:0;width:820px;height:1080px;overflow:hidden;z-index:1;transition:width 1.4s var(--ease)}
+.s5 .ph img{object-position:32% 40%}
+.s5 .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 62%,#0c0e1b 100%);transition:opacity 1s}
+.s5 .ph .dim{position:absolute;inset:0;background:rgba(7,8,16,.66);opacity:0;transition:opacity 1.2s .3s}
+.s5.at3 .ph{width:1920px}
+.s5.at3 .ph::after{opacity:0}
+.s5.at3 .ph .dim{opacity:1}
+.s5 .col{position:absolute;right:100px;top:0;width:920px;height:1080px;transition:opacity .6s}
+.s5.at3 .col{opacity:0}
+.s5 .col h2{position:absolute;top:96px;left:0;right:0;text-align:center;font-size:62px;font-weight:900}
+.s5 .tl{position:absolute;top:240px;right:0;width:920px}
+.s5 .tl::before{content:"";position:absolute;right:34px;top:40px;bottom:40px;width:2px;background:linear-gradient(var(--violet),var(--rose),var(--amber));opacity:.5}
+.s5 .it{position:relative;padding-right:104px;font-size:35px;line-height:1.5;color:#e8e4f0;transition:opacity .7s,transform .9s var(--ease)}
+.s5 .it+.it{margin-top:48px}
+.s5 .node{position:absolute;right:0;top:2px;width:70px;height:70px;border-radius:22px;padding:17px;color:var(--c);
+  background:color-mix(in srgb,var(--c) 18%,#10121f);border:1.5px solid color-mix(in srgb,var(--c) 80%,transparent);box-shadow:0 0 34px -6px var(--c)}
+.s5.at1 .i1,.s5.at2 .i1,.s5.at2 .i2{opacity:.42}
+.s5 .q{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center;
+  font-family:'Frank Ruhl Libre',serif;font-size:88px;font-weight:700;line-height:1.2;transform:none;transition:opacity 1s var(--ease) .9s}
+.s5 .q span{display:block;text-shadow:0 6px 40px rgba(0,0,0,.6)}
+.s5 .q .q2{color:#ffc2cf;opacity:0;transform:translateY(20px);transition:opacity 1s 2.2s,transform 1.2s var(--ease) 2.2s}
+.s5 .q.in .q2{opacity:1;transform:none}
+
+/* ============ שקף 7: הכיסא השקוף ============ */
+.s7{--ga:#34d6c3;--gb:#5ab8ff;--gx:95%;--gy:0%}
+.s7 .ph{position:absolute;left:0;top:0;width:900px;height:1080px;overflow:hidden;z-index:1}
+.s7 .ph img{object-position:86% 50%;transform-origin:77% 64%;transition:transform 2.2s var(--ease),filter 2s}
+.s7.at2 .ph img{transform:scale(1.32);filter:saturate(.75)}
+.s7 .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 70%,#0c0e1b 100%),linear-gradient(0deg,rgba(7,9,18,.9) 0%,transparent 45%);opacity:.35;transition:opacity 1.2s}
+.s7.at2 .ph::after{opacity:1}
+.s7 .ex{position:absolute;left:50px;width:800px;bottom:80px;z-index:3;transition-delay:1s}
+.s7 .ex .lbl{font-size:28px;color:#bfe9e3;line-height:1.5}
+.s7 .ex q{display:block;quotes:none;margin-top:14px;font-family:'Frank Ruhl Libre',serif;font-size:54px;font-weight:700;line-height:1.18;text-shadow:0 6px 30px rgba(0,0,0,.7)}
+.s7 .col{position:absolute;right:100px;top:0;width:840px}
+.s7 .col h2{margin-top:150px;text-align:center;font-size:62px;font-weight:900}
+.s7 .col p{font-size:39px;line-height:1.55;color:#e8e4f0;margin-top:46px;transition:opacity .7s,transform .9s var(--ease)}
+.s7.at2 .c1,.s7.at2 .c2{opacity:.4}
+.s7 .col .fin{padding:26px 34px;border-radius:24px;background:rgba(52,214,195,.1);border:1.5px solid rgba(52,214,195,.55);box-shadow:0 0 60px -20px rgba(52,214,195,.6);color:#fff}
+
+/* ============ שקף 11: ממושיע לאויב ============ */
+.s11 .warm,.s11 .cold{position:absolute;inset:0}
+.s11 .cold{opacity:0;transition:opacity 1.8s var(--ease)}
+.s11 .cold img{filter:grayscale(.9) brightness(.42) contrast(1.15)}
+.s11 .cold::after{content:"";position:absolute;inset:0;background:rgba(30,50,110,.38);mix-blend-mode:multiply}
+.s11.at2 .cold{opacity:1}
+.s11 .veil{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 45%,rgba(8,10,20,.35),rgba(8,10,20,.72));z-index:1}
+.s11 .t{z-index:3}
+.s11 .qa,.s11 .qb{position:absolute;left:0;right:0;z-index:3;text-align:center;font-family:'Frank Ruhl Libre',serif;font-size:74px;font-weight:700;line-height:1.2;quotes:none}
+.s11 .qa{top:300px;color:#ffe3b5;text-shadow:0 0 50px rgba(255,190,110,.55),0 6px 30px rgba(0,0,0,.6);transition:opacity 1s,transform .9s var(--ease),color 1.2s}
+.s11 .qb{top:470px;color:#cfe0ff;text-shadow:0 0 50px rgba(110,150,255,.5),0 6px 30px rgba(0,0,0,.6);transition-delay:.9s}
+.s11.at2 .qa{opacity:.38;transform:scale(.9)}
+.s11 .panel{position:absolute;left:210px;right:210px;bottom:70px;z-index:3;display:grid;padding:30px 44px;border-radius:28px;
+  background:rgba(10,12,24,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14)}
+.s11 .panel>*{grid-area:1/1;font-size:31px;line-height:1.5;color:#e6e2ee;transition:opacity .7s}
+.s11 .panel p+p{margin-top:12px}
+.s11 .pp{display:block}
+.s11.at3 .pp{opacity:0}
+.s11 .p3{transform:none}
+
+/* ============ שקף 18: סיום ============ */
+.s18 .kb{transform-origin:47% 62%}
+.s18 .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(7,9,18,.9) 0%,rgba(7,9,18,.4) 40%,transparent 62%),linear-gradient(180deg,rgba(7,9,18,.75),transparent 28%)}
+.s18 .t{z-index:3}
+.s18 .q{position:absolute;left:220px;right:220px;bottom:110px;z-index:3;text-align:center;font-family:'Frank Ruhl Libre',serif;font-size:56px;font-weight:700;line-height:1.35;text-shadow:0 6px 30px rgba(0,0,0,.7);transition-duration:1.2s}
+
+/* נגן */
+#hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:15px;color:#77728a;transition:opacity 1s}
+#count{position:fixed;bottom:18px;left:22px;font-size:15px;color:#5f5a72;font-variant-numeric:tabular-nums;direction:ltr}
+html.shot #hint,html.shot #count{display:none}
+html.shot *,html.shot *::before,html.shot *::after{transition-duration:0s!important;transition-delay:0s!important}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- ===== שקף 1: פתיחה ===== -->
+<section class="slide s1">
+  <div class="kbw"><img class="full kb" src="media/IMAGE.jpg" alt=""></div>
+  <div class="shade"></div>
+  <h1 class="b" data-g="1">על פגיעות נרקיסיסטית,<span class="l2">הגנות והקשר הטיפולי</span></h1>
+</section>
+
+<!-- ===== שקף 4: ההגנות ===== -->
+<section class="slide sA">
+  <h2 class="t">מהבושה אל הכעס: איך ההגנות פועלות?</h2>
+  <div class="intro">כשהערך העצמי מאוים, האדם עשוי להפעיל הגנות שמרחיקות אותו מתחושת הבושה.</div>
+  <svg class="wires" viewBox="0 0 1920 1080">
+    <g class="b" data-g="1" style="--c:var(--amber)"><path class="w0" pathLength="1" d="M1045 505 Q1120 372 1185 368"/><path class="w1" pathLength="1" d="M1045 505 Q1120 372 1185 368"/></g>
+    <g class="b" data-g="2" style="--c:var(--sky)"><path class="w0" pathLength="1" d="M875 505 Q800 372 735 368"/><path class="w1" pathLength="1" d="M875 505 Q800 372 735 368"/></g>
+    <g class="b" data-g="3" style="--c:var(--violet)"><path class="w0" pathLength="1" d="M1045 605 Q1120 715 1185 715"/><path class="w1" pathLength="1" d="M1045 605 Q1120 715 1185 715"/></g>
+    <g class="b" data-g="4" style="--c:var(--lime)"><path class="w0" pathLength="1" d="M875 605 Q800 715 735 715"/><path class="w1" pathLength="1" d="M875 605 Q800 715 735 715"/></g>
+  </svg>
+  <div class="core"><span class="ico">{{ICON}}</span></div>
+  <div class="def b" data-g="1" style="--c:var(--amber);left:1180px;top:262px;--fx:-300px;--fy:180px">
+    <div class="hd"><span class="tile ico">{{ICON}}</span><h3>גרנדיוזיות</h3></div>
+    <q class="serif">"אני טוב יותר מכולם."</q>
+  </div>
+  <div class="def b" data-g="2" style="--c:var(--sky);left:100px;top:262px;--fx:300px;--fy:180px">
+    <div class="hd"><span class="tile ico">{{ICON}}</span><h3>דה־ולואציה</h3></div>
+    <q class="serif">"המטפל הזה בכלל לא מקצועי."</q>
+  </div>
+  <div class="def b" data-g="3" style="--c:var(--violet);left:1180px;top:618px;--fx:-300px;--fy:-160px">
+    <div class="hd"><span class="tile ico">{{ICON}}</span><h3>אידיאליזציה</h3></div>
+    <q class="serif">"רק את באמת מסוגלת להבין אותי."</q>
+  </div>
+  <div class="def b" data-g="4" style="--c:var(--lime);left:100px;top:618px;--fx:300px;--fy:-160px">
+    <div class="hd"><span class="tile ico">{{ICON}}</span><h3>האשמת האחר</h3></div>
+    <q class="serif">"הבעיה היא בהם, לא בי."</q>
+  </div>
+  <div class="relief b" data-g="5">ההגנות עשויות לספק הקלה זמנית, אבל גם להרחיק את האדם ממפגש עם הפגיעות שלו ועם האחר.</div>
+  <div class="verdict b" data-g="6"><i class="bar"></i><p class="serif">לפעמים הכעס הוא הדרך היחידה שהמטופל מכיר כדי לא להרגיש קטן.</p></div>
+</section>
+
+<!-- ===== שקף 5: עצמי שברירי ===== -->
+<section class="slide s5">
+  <div class="ph"><img class="full" src="media/IMAGE.jpg" alt=""><div class="dim"></div></div>
+  <div class="col">
+    <h2>איך מתפתח עצמי שברירי?</h2>
+    <div class="tl">
+      <div class="it i1" style="--c:var(--violet)"><span class="node ico">{{ICON}}</span>לפי פסיכולוגיית העצמי של קוהוט, התפתחות תחושת ערך יציבה קשורה לחוויות חוזרות של הכרה, שיקוף והיענות אמפתית.</div>
+      <div class="it i2 b" data-g="1" style="--c:var(--rose)"><span class="node ico">{{ICON}}</span>כאשר הילד מרגיש שרואים אותו בעיקר כשהוא מצליח, מרשים או עונה על ציפיות, הוא עלול ללמוד שערכו תלוי בתגובות הסביבה.</div>
+      <div class="it i3 b" data-g="2" style="--c:var(--amber)"><span class="node ico">{{ICON}}</span>בבגרות, הוא עשוי להמשיך לחפש מבחוץ את תחושת הערך שמתקשה להישמר מבפנים.</div>
+    </div>
+  </div>
+  <div class="q b" data-g="3"><span>"רואים אותי כשאני מצליח</span><span class="q2">אבל האם יראו אותי גם כשאני נכשל?"</span></div>
+</section>
+
+<!-- ===== שקף 6: זולת-עצמי ===== -->
+<section class="slide sB">
+  <h2 class="lead">זולת־עצמי: <br>למה האחר כל כך משמעותי לתחושת הערך שלנו?</h2>
+  <div class="p1 b ph1" data-g="1">לפי קוהוט, אנחנו זקוקים לאחרים לא רק כדי לקבל אהבה וקשר, אלא גם כדי להרגיש בעלי ערך, יציבים ושלמים.</div>
+  <div class="dict b ph1" data-g="1">
+    <span class="mark ico">{{ICON}}</span>
+    <div class="term"><b>זולת־עצמי</b><span class="en">(Selfobject)</span></div>
+    <p>הוא אדם שאנחנו חווים אותו כממלא תפקיד חיוני בשמירה על תחושת העצמי שלנו. במובן הזה, הוא אינו נחווה רק כאדם נפרד, אלא גם כמי שעוזר לנו להרגיש מי אנחנו.</p>
+  </div>
+  <div class="ph2">
+    <div class="sub b" data-g="2">קוהוט מתאר שלושה צורכי זולת־עצמי מרכזיים:</div>
+    <svg class="wires" viewBox="0 0 1920 1080">
+      <g class="b" data-g="3" style="--c:var(--teal)"><path class="w0" pathLength="1" d="M1475 612 Q1450 780 1052 782"/><path class="w1" pathLength="1" d="M1475 612 Q1450 780 1052 782"/></g>
+      <g class="b" data-g="4" style="--c:var(--amber)"><path class="w0" pathLength="1" d="M960 612 L960 690"/><path class="w1" pathLength="1" d="M960 612 L960 690"/></g>
+      <g class="b" data-g="5" style="--c:var(--violet)"><path class="w0" pathLength="1" d="M445 612 Q470 780 868 782"/><path class="w1" pathLength="1" d="M445 612 Q470 780 868 782"/></g>
+    </svg>
+    <div class="hub b" data-g="2"><span class="ico">{{ICON}}</span></div>
+    <div class="need b" data-g="3" style="--c:var(--teal);left:1240px">
+      <span class="tile ico">{{ICON}}</span>
+      <h3>שיקוף <span class="en">(Mirroring)</span></h3>
+      <p>הצורך שמישהו יראה אותנו, יכיר ברגשות שלנו וייתן תוקף לחוויה ולהישגים שלנו.</p>
+    </div>
+    <div class="need b" data-g="4" style="--c:var(--amber);left:725px">
+      <span class="tile ico">{{ICON}}</span>
+      <h3>אידיאליזציה <span class="en">(Idealizing)</span></h3>
+      <p>הצורך להרגיש שיש מישהו יציב, חזק ובטוח שאפשר להישען עליו ולשאוב ממנו ביטחון.</p>
+    </div>
+    <div class="need b" data-g="5" style="--c:var(--violet);left:210px">
+      <span class="tile ico">{{ICON}}</span>
+      <h3>תאומות <span class="en">(Twinship)</span></h3>
+      <p>הצורך להרגיש דומים לאחרים, שייכים ומובנים, ולא לבד בעולם.</p>
+    </div>
+    <div class="claim b" data-g="6">כאשר הצרכים האלה נענים באופן מותאם לאורך ההתפתחות, מתבססת בהדרגה יכולת לשמור על תחושת ערך גם בלי אישור מתמיד מבחוץ.</div>
+  </div>
+  <div class="care b" data-g="7">
+    <div class="hd"><span class="tile ico">{{ICON}}</span><b>בטיפול:</b></div>
+    <p>המטופל עשוי להזדקק למטפל כזולת־עצמי - שיראה אותו, יתפעל ממנו, יבין אותו או יהיה עבורו דמות יציבה. כשהמטפל אינו מצליח למלא את הצורך באותו רגע, המטופל עלול לחוות פגיעה עמוקה.</p>
+  </div>
+</section>
+
+<!-- ===== שקף 7: הכיסא השקוף ===== -->
+<section class="slide s7">
+  <div class="ph"><img class="full" src="media/IMAGE.jpg" alt=""></div>
+  <div class="ex b" data-g="2"><div class="lbl">דוגמה: המטפל מאחר בכמה דקות. המטופל אומר:</div><q>"אם הייתי חשוב לך, זה לא היה קורה."</q></div>
+  <div class="col">
+    <h2>מה קורה כשהאחר מאכזב?</h2>
+    <p class="c1">המטפל עשוי להיתפס כדמות שאמורה להבין, להכיר, לחזק ולעיתים אפילו לדעת מה המטופל צריך בלי שיאמר זאת.</p>
+    <p class="c2 b" data-g="1">כשמתרחש כשל אמפתי, אמיתי או נחווה, המטופל עלול להרגיש שאינו חשוב, שאינו מובן או שננטש.</p>
+    <p class="fin b" data-g="3">מה שנראה למטפל כאירוע קטן עשוי להיחוות אצל המטופל כפגיעה עמוקה בקשר ובתחושת העצמי.</p>
+  </div>
+</section>
+
+<!-- ===== שקף 8: המקרה של תומר ===== -->
+<section class="slide sC">
+  <h2 class="lead">המקרה של תומר: <br>בין הצורך בקשר למאבק במערכת</h2>
+  <div class="file b" data-g="1">
+    <div class="tabs">
+      <div class="tab t1" style="--c:var(--sky)"><span class="ico">{{ICON}}</span>הרקע של המטופל</div>
+      <div class="tab t2" style="--c:var(--amber)"><span class="ico">{{ICON}}</span>מה קרה בתהליך השיקום?</div>
+      <div class="tab t3" style="--c:var(--rose)"><span class="ico">{{ICON}}</span>מה התרחש בחדר הטיפולים?</div>
+      <div class="tab t4" style="--c:var(--teal)"><span class="ico">{{ICON}}</span>השאלה הקלינית</div>
+    </div>
+    <div class="paper">
+      <span class="clip ico">{{ICON}}</span>
+      <div class="redact"><i style="width:150px"></i><i style="width:90px"></i><i style="width:60px"></i></div>
+      <div class="pages">
+        <div class="pg p1">
+          <p>תומר, בן 41, גרוש ואב לילדים, השתחרר ממאסר ראשון בפועל לתוכנית שיקום בפיקוח. ברקע עבירות רכוש, מרמה, תקיפה והחזקת נשק, והסתבכות כלכלית בעקבות התמכרות להימורים.</p>
+          <p>בילדותו גדל בבית שבו האב נהג באלימות כלפי האם ולעיתים גם כלפיו, כאשר ניסה להגן עליה. הוא מתאר גבולות לא עקביים שנעו בין נוקשות למתירנות.</p>
+        </div>
+        <div class="pg p2">
+          <p>במהלך הפיקוח עלו קשיים ביציבות ובהתנהלות: היעדרויות ממפגשים קבוצתיים, סימני שאלה סביב התעסוקה ושינויים בהחלטות לגבי מקום מגוריו. בעקבות זאת הוחלט לעבות את התוכנית הטיפולית.</p>
+          <p>בספטמבר החל טיפול פרטני, ובמהלכו התקיימו כשבע פגישות.</p>
+        </div>
+        <div class="pg p3">
+          <p>המפגשים נפתחו פעמים רבות בהאשמות כלפי גורמי השיקום. תומר טען שהם רוצים ברעתו, רודפים אותו ומנסים להחזירו לכלא.</p>
+          <p>הוא היה עסוק בניסיון להוכיח שלא הפר את תנאי התוכנית ושחייו יציבים, והתקשה להתפנות להתבוננות רגשית מעמיקה.</p>
+          <p>לצד זאת, המטפלת התרשמה שהוא צמא לקשר ולמקום שיכיל את רגשותיו, כאביו ותסכוליו.</p>
+        </div>
+        <div class="pg p4 q">
+          <span class="tile ico">{{ICON}}</span>
+          <p>האם המאבק הבלתי פוסק להוכיח שנעשה לו עוול מגן גם מפני האפשרות להרגיש חלש, אשם או חסר ערך?</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <i class="b" data-g="2"></i><i class="b" data-g="3"></i><i class="b" data-g="4"></i>
+</section>
+
+<!-- ===== שקף 9: אתם רק מחפשים ===== -->
+<section class="slide sD">
+  <h2 class="t">"אתם רק מחפשים איך להכשיל אותי"</h2>
+  <div class="chat">
+    <div class="bar"><i></i><i></i><i></i><span>דוגמה מתוך הטיפול</span></div>
+    <div class="msgs">
+      <div class="msg pt" style="--c:#e8577a">
+        <span class="av ico">{{ICON}}</span>
+        <div><div class="who">מטופל:</div><div class="dots"><i></i><i></i><i></i></div><div class="bub text">"לא משנה מה אני עושה, אתם תמיד מוצאים משהו נגדי. אתם רוצים שאכשל."</div></div>
+      </div>
+      <div class="msg th b" data-g="1" style="--c:#1fb5a4">
+        <span class="av ico">{{ICON}}</span>
+        <div><div class="who">מטפלת:</div><div class="dots"><i></i><i></i><i></i></div><div class="bub text">"אני שומעת כמה אתה מרגיש שלא רואים את המאמץ שלך, ושכל הזמן בוחנים אותך."</div></div>
+      </div>
+    </div>
+  </div>
+  <svg class="link b" data-g="2" viewBox="0 0 1920 1080"><path d="M1010 330 C 960 330, 960 240, 905 240"/></svg>
+  <div class="berg b" data-g="2">
+    <h4>מאחורי ההאשמה עשויים להימצא</h4>
+    <div class="sea">
+      <svg viewBox="0 0 800 40" preserveAspectRatio="none"><path d="M0 20 Q 50 0 100 20 T 200 20 T 300 20 T 400 20 T 500 20 T 600 20 T 700 20 T 800 20" fill="none" stroke="rgba(150,200,255,.55)" stroke-width="3"/></svg>
+      <div class="layer l1">פחד מכישלון,</div>
+      <div class="layer l2">חוויה של השפלה</div>
+      <div class="layer l3">וצורך עמוק שיכירו במאמץ שלו.</div>
+    </div>
+  </div>
+  <div class="punch b" data-g="3"><span>אפשר להכיר בכאב של המטופל גם בלי להסכים עם הפרשנות שלו למציאות.</span></div>
+</section>
+
+
+<!-- ===== שקף 11: ממושיע לאויב ===== -->
+<section class="slide s11">
+  <div class="warm"><img class="full" src="media/IMAGE.jpg" alt=""></div>
+  <div class="cold"><img class="full" src="media/IMAGE.jpg" alt=""></div>
+  <div class="veil"></div>
+  <h2 class="t img-t">כשהמטפל הופך ממושיע לאויב</h2>
+  <q class="qa b" data-g="1">"סוף סוף מצאתי מישהי שמבינה אותי."</q>
+  <q class="qb b" data-g="2">"את בדיוק כמו כולם. אי אפשר לסמוך עלייך."</q>
+  <div class="panel">
+    <div class="pp"><p>בתחילת הקשר המטופל עשוי לחוות את המטפל כאדם היחיד שבאמת מבין אותו.</p><p>אבל ברגע של אכזבה, הצבת גבול או חוסר הסכמה, אותה דמות עלולה להיחוות כמי שאינה מבינה, אינה אכפתית ואפילו פועלת נגדו.</p></div>
+    <p class="p3 b" data-g="3">התנודה הזאת יכולה ללמד אותנו על הקושי להחזיק תמונה מורכבת של האחר: אדם שיכול להיות אכפתי, ובכל זאת לאכזב.</p>
+  </div>
+</section>
+
+<!-- ===== שקף 18: סיום ===== -->
+<section class="slide s18">
+  <div class="kbw"><img class="full kb" src="media/IMAGE.jpg" alt=""></div>
+  <div class="shade"></div>
+  <h2 class="t img-t">לראות את האדם שמאחורי ההגנה</h2>
+  <p class="q b" data-g="1">"לא תמיד נוכל לשנות מיד את ההתנהגות של המטופל. אבל האופן שבו אנחנו מבינים אותה עשוי לשנות את המפגש כולו."</p>
+</section>
+</div>
+<div id="hint">לחיצה, רווח או חץ שמאלה: הבא. חץ ימינה: אחורה. F: מסך מלא</div>
+<div id="count"></div>
+<script>
+const stage=document.getElementById('stage'), slides=[...document.querySelectorAll('.slide')];
+let s=0,k=0;
+const steps=sl=>Math.max(0,...[...sl.querySelectorAll('.b')].map(e=>+e.dataset.g||0));
+function fit(){ const z=Math.min(innerWidth/1920,innerHeight/1080); stage.style.transform='translate(-50%,-50%) scale('+z+')'; }
+function render(){
+  slides.forEach((sl,i)=>{
+    sl.classList.toggle('on',i===s);
+    const n=steps(sl), kk=i===s?k:(i<s?n:0);
+    for(let g=1;g<=8;g++) sl.classList.toggle('at'+g,g<=kk);
+    sl.querySelectorAll('.b').forEach(e=>e.classList.toggle('in',(+e.dataset.g||0)<=kk));
+  });
+  document.getElementById('count').textContent=(s+1)+' / '+slides.length+'   ('+k+'/'+steps(slides[s])+')';
+  history.replaceState(null,'','#'+(s+1)+'.'+k);
+}
+function next(){ if(k<steps(slides[s])) k++; else if(s<slides.length-1){s++;k=0;} render(); }
+function prev(){ if(k>0) k--; else if(s>0){s--;k=steps(slides[s]);} render(); }
+addEventListener('keydown',e=>{
+  if(['ArrowLeft',' ','PageDown','Enter'].includes(e.key)){e.preventDefault();next();}
+  else if(['ArrowRight','PageUp','Backspace'].includes(e.key)){e.preventDefault();prev();}
+  else if(e.key==='f'||e.key==='F'||e.key==='כ'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+});
+addEventListener('click',next);
+addEventListener('resize',fit);
+const m=location.hash.match(/^#(\d+)(?:\.(\d+))?/);
+if(m){s=Math.min(slides.length,+m[1])-1;k=Math.min(+(m[2]||0),steps(slides[s]));}
+if(location.search.includes('shot')) document.documentElement.classList.add('shot');
+fit(); render();
+setTimeout(()=>document.getElementById('hint').style.opacity=0,5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+/* ============================================================
+   עיצוב מצגת: בסיס המנוע (במה, בילדאפים, נגן, ייצוא והדפסה)
+   הבמה קבועה: 1920x1080. כל המידות בפיקסלים של הבמה.
+   צבעים ופונטים של המצגת מוגדרים ב-style.css של כל מצגת (על :root).
+   ============================================================ */
+:root{
+  --bg:#0b0d19; --fg:#f4f1f8; --muted:#aaa4bd; --line:rgba(255,255,255,.1);
+  --font-display:'Heebo'; --font-body:'Heebo'; --font-quote:'Frank Ruhl Libre';
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#04050a;color:var(--fg);font-family:var(--font-body),system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#deck{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{width:1920px;height:1080px;position:relative;flex:none;overflow:hidden;background:var(--bg);isolation:isolate}
+img,video,svg{display:block;max-width:none}
+.ic{width:1em;height:1em;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.notes{display:none}
+
+/* ---------- שקפים ובילדאפים ---------- */
+.slide{position:absolute;inset:0;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .6s var(--ease),visibility .6s;background:var(--slide-bg,var(--bg))}
+.slide.active{opacity:1;visibility:visible}
+.b{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .9s var(--ease),filter .7s var(--ease)}
+.b.in{opacity:1;transform:none}
+.b.past{opacity:.38}
+.stack{display:grid}.stack>*{grid-area:1/1}.stack>.gone{opacity:0!important;pointer-events:none}
+
+/* ---------- עזרים בסיסיים ---------- */
+.en{direction:ltr;unicode-bidi:isolate}
+.credit{position:absolute;bottom:14px;left:24px;z-index:30;font-size:15px;color:rgba(255,255,255,.62);text-shadow:0 1px 4px rgba(0,0,0,.6);direction:rtl;max-width:900px}
+.logo-corner{position:absolute;top:40px;left:56px;height:52px;width:auto;z-index:40;object-fit:contain}
+.tbox{position:absolute;z-index:20;font-size:44px;line-height:1.3;min-width:120px}
+.qrbox{position:absolute;z-index:20;display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px;border-radius:24px;background:#fff;color:#111}
+.qrbox .qr{width:260px;height:260px}.qrbox .qr svg{width:100%;height:100%}
+.qrbox .cap{font-size:28px;font-weight:700;text-align:center;max-width:300px}
+
+/* ======================= נגן ======================= */
+#bar{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);z-index:100;display:flex;align-items:center;gap:4px;
+  padding:8px;border-radius:999px;background:rgba(18,18,24,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#f2f0f5;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;font-family:system-ui,-apple-system,sans-serif;direction:rtl}
+#bar.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#bar button{all:unset;cursor:pointer;height:44px;min-width:44px;padding:0 12px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;white-space:nowrap}
+#bar button:hover{background:rgba(255,255,255,.12)}
+#bar button:focus-visible{outline:2px solid #fff}
+#bar .ic{font-size:20px}
+#bar .count{font-size:15px;font-variant-numeric:tabular-nums;opacity:.8;padding:0 8px;min-width:64px;text-align:center;direction:ltr;unicode-bidi:isolate}
+#bar .sep{width:1px;height:24px;background:rgba(255,255,255,.18);margin:0 4px}
+#bar [data-act="edit"]{display:none}
+html.dev #bar [data-act="edit"]{display:flex;background:#2f6bff;color:#fff}
+html.dev #bar [data-act="edit"]:hover{background:#4a7fff}
+
+#grid{position:fixed;inset:0;z-index:90;background:rgba(10,10,14,.94);backdrop-filter:blur(10px);overflow:auto;padding:60px 5vw 120px;display:none;direction:rtl}
+#grid.show{display:block}
+#grid .hd{color:#fff;font:700 22px system-ui,sans-serif;margin-bottom:24px}
+#grid .wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+#grid .th{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:8px;color:#ddd;font:600 15px system-ui,sans-serif;position:relative}
+#grid .th .box{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:12px;outline:2px solid transparent;outline-offset:3px;background:#0b0d19}
+#grid .th.cur .box{outline-color:#fff}
+#grid .th .box>.mini{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;pointer-events:none}
+#grid .th .mini .slide{opacity:1;visibility:visible;transition:none}
+#grid .th .mini *{transition:none!important;animation-duration:0s!important;animation-delay:0s!important;animation-iteration-count:1!important;animation-fill-mode:forwards!important}
+
+#toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:300;background:#1c1b22;color:#fff;padding:14px 22px;border-radius:14px;font:600 16px system-ui,sans-serif;
+  display:none;max-width:90vw;box-shadow:0 10px 30px rgba(0,0,0,.4);direction:rtl}
+#toast.show{display:block}
+
+/* ======================= ייצוא, הדפסה ובדיקה ======================= */
+/* בצילום: מעברים קופצים לסוף, ואנימציות מסתיימות מיד במצב הסופי שלהן */
+html.export *,html.export *::before,html.export *::after{transition-duration:0s!important;transition-delay:0s!important;
+  animation-duration:.001s!important;animation-delay:0s!important;animation-iteration-count:1!important;animation-fill-mode:forwards!important}
+html.export #bar,html.export #grid,html.export #toast,html.export #edit-ui{display:none!important}
+@page{size:1920px 1080px;margin:0}
+html.print,html.print body{overflow:visible;height:auto;background:var(--bg)}
+html.print #deck{position:static;display:block}
+html.print #stage{height:auto;transform:none!important;overflow:visible;background:none}
+html.print .slide{position:relative;height:1080px;opacity:1;visibility:visible;break-after:page;overflow:hidden}
+html.print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}

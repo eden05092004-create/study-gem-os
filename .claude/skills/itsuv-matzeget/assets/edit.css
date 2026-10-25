@@ -1,0 +1,68 @@
+/* ============================================================
+   עיצוב מצגת: מצב עריכה (נטען רק כשהמצגת פתוחה דרך השרת המקומי)
+   ============================================================ */
+#edit-ui{font:500 15px/1.4 system-ui,-apple-system,"Arial Hebrew",sans-serif;direction:rtl;color:#f2f0f5}
+#edit-ui button,#edit-ui select,#edit-ui input,#edit-ui textarea{font:inherit;color:inherit}
+#edit-ui .etop{position:fixed;top:0;left:0;right:0;z-index:200;display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;
+  background:rgba(18,18,26,.96);border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+html.editing #edit-ui .etop{display:flex}
+#edit-ui .etop .ttl{font-weight:800;margin-left:8px;padding:0 6px;color:#9fb8ff}
+#edit-ui .eb{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border-radius:9px;background:rgba(255,255,255,.07);white-space:nowrap}
+#edit-ui .eb:hover{background:rgba(255,255,255,.16)}
+#edit-ui .eb:disabled{opacity:.35;cursor:default}
+#edit-ui .eb.primary{background:#2fb36b;color:#fff;font-weight:800}
+#edit-ui .eb.primary:hover{background:#38c878}
+#edit-ui .eb.claude{background:#3d4bd6;color:#fff}
+#edit-ui .eb.danger:hover{background:#c83737}
+#edit-ui .eb svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#edit-ui .sep{width:1px;height:22px;background:rgba(255,255,255,.16);margin:0 4px}
+#edit-ui .status{margin-right:auto;font-size:13px;opacity:.75;min-width:70px}
+#edit-ui select{height:34px;border-radius:9px;background:#26252f;border:1px solid rgba(255,255,255,.14);padding:0 8px}
+
+/* בחירה וגרירה */
+html.editing #stage .slide.active *{cursor:default}
+html.editing #stage .sel{outline:3px solid #4f7dff!important;outline-offset:4px;cursor:move!important}
+html.editing #stage [contenteditable="true"]{outline:3px solid #2fb36b!important;outline-offset:4px;cursor:text!important;caret-color:#2fb36b}
+html.editing #stage .hov{outline:2px dashed rgba(120,160,255,.7);outline-offset:4px}
+#edit-ui .guide{position:fixed;z-index:190;background:#ff3fa4;pointer-events:none;display:none}
+#edit-ui .guide.v{width:1px;top:0;bottom:0}#edit-ui .guide.h{height:1px;left:0;right:0}
+
+/* סרגל צף ליד האלמנט הנבחר */
+#edit-ui .efloat{position:fixed;z-index:210;display:none;align-items:center;gap:4px;padding:5px;border-radius:12px;background:#1d1c25;border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+#edit-ui .efloat.show{display:flex}
+#edit-ui .efloat .eb{height:30px;padding:0 8px;font-size:14px}
+#edit-ui .efloat input[type=color]{width:32px;height:30px;border:0;background:none;padding:0;cursor:pointer}
+#edit-ui .efloat .hint{font-size:12px;opacity:.6;padding:0 6px}
+
+/* הערות דובר */
+#edit-ui .enotes{position:fixed;left:0;right:0;bottom:0;z-index:200;display:none;padding:10px 14px 14px;background:rgba(18,18,26,.97);border-top:1px solid rgba(255,255,255,.12)}
+html.editing.notes-open #edit-ui .enotes{display:block}
+#edit-ui .enotes label{display:block;font-weight:700;margin-bottom:6px}
+#edit-ui .enotes textarea{width:100%;height:96px;resize:vertical;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:#0f0f15;padding:10px 12px;font-size:16px;line-height:1.5}
+
+/* חלון שאלה */
+#edit-ui .edlg{position:fixed;inset:0;z-index:250;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+#edit-ui .edlg.show{display:flex}
+#edit-ui .edlg .box{width:min(560px,92vw);background:#1d1c25;border-radius:18px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:12px}
+#edit-ui .edlg h3{font-size:19px}
+#edit-ui .edlg p{opacity:.75;font-size:14px}
+#edit-ui .edlg input,#edit-ui .edlg textarea{width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:#0f0f15;padding:10px 12px;font-size:16px}
+#edit-ui .edlg textarea{height:110px;resize:vertical}
+#edit-ui .edlg .row{display:flex;gap:8px;justify-content:flex-start}
+
+/* מסך סיום */
+#edit-ui .edone{position:fixed;inset:0;z-index:260;display:none;align-items:center;justify-content:center;background:rgba(8,9,14,.9);text-align:center}
+#edit-ui .edone.show{display:flex}
+#edit-ui .edone .box{max-width:620px;padding:30px}
+#edit-ui .edone h2{font-size:34px;margin-bottom:12px}
+#edit-ui .edone p{font-size:19px;opacity:.85;line-height:1.6}
+
+/* במצב עריכה הבמה יורדת קצת כדי לפנות מקום לסרגל העליון */
+html.editing #deck{top:var(--etop,52px)}
+html.editing.notes-open #deck{bottom:150px}
+/* בכל השקפים במצב עריכה: גרירה לשינוי סדר */
+html.editing #grid .hd::after{content:" גררו שקף כדי לשנות את הסדר."}
+html.editing #grid .th{cursor:grab}
+#grid .th.drop-before .box{box-shadow:6px 0 0 -1px #4f7dff}
+#grid .th.drop-after .box{box-shadow:-6px 0 0 -1px #4f7dff}
+#grid .th.dragging{opacity:.35}
